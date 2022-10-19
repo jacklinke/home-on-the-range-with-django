@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% load static i18n %}
+
+{% block content_title %}Pool Details{% endblock content_title %}
+
+{% block content %}
+
+    {{ pool }}
+
+    <p class="p-3">
+        <a href="{% url 'main:pool_list_view' %}" class="btn btn-secondary" id="sidebarToggle2">
+            <i class="bi-arrow-left text-white fs-3 m-0"></i>
+        </a>
+    </p>
+
+{% endblock content %}

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% load static i18n %}
+
+{% block content_title %}Reservations{% endblock content_title %}
+
+
+{% block content %}
+<div class="card-group">
+    <div class="card">
+        <div class="card-body">
+            <p class="card-text">
+                <h3>Lane Reservations</h3>
+                <div id="laneReservationsContent"
+                     hx-get="{% url 'main:lane_reservation' %}"
+                     hx-trigger="load"></div>
+            </p>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <p class="card-text">
+                <h3>Locker Reservations</h3>
+                <div id="lockerReservationsContent"
+                     hx-get="{% url 'main:locker_reservation' %}"
+                     hx-trigger="load"></div>
+            </p>
+        </div>
+    </div>
+</div>
+
+
+<div class="m-3 mt-5">
+    <button class="btn btn-dark" type="button" data-bs-toggle="collapse" data-bs-target="#collapseExample" aria-expanded="false" aria-controls="collapseExample">
+        Code Notes <i class="bi-lightbulb text-warning"></i>
+    </button>
+    <div class="collapse" id="collapseExample">
+        <div class="card bg-light">
+            <div class="card-body">
+                <p class="card-text">The default display for a range is not very pretty for use in a template.</p>
+                <pre class="m-0"><code class="language-django">
+{% verbatim %}{{ lane_reservation.period }}{% endverbatim %}
+                    </code></pre>
+                <i>Result: [2022-10-05 14:00:00+00:00, 2022-10-05 16:00:00+00:00)</i>
+
+                <p></p>
+
+                <p class="card-text">
+                    In order to print out the dates and times of reservations nicely, we can use the `range.lower` and range.upper`.
+                    Django automatically localizes the Date Ranges here, based on project settings.
+                </p>
+                <pre class="m-0"><code class="language-django">
+{% verbatim %}From {{ lane_reservation.period.lower }} -to- {{ lane_reservation.period.upper }}{% endverbatim %}
+                </code></pre>
+                <i>Result: From Oct. 5, 2022, 2 p.m. -to- Oct. 5, 2022, 4 p.m.</i>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock content %}

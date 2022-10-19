@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% load static i18n %}
+
+{% block content_title %}Home{% endblock content_title %}
+
+
+{% block content %}
+
+<div class="tab-content m-3"
+     id="toolTabContent"
+     hx-get="{% url 'main:home_partial_view' %}"
+     hx-trigger="load"
+     hx-swap="innerHTML"></div>
+
+{% endblock content %}

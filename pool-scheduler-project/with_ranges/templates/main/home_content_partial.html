@@ -1,0 +1,357 @@
+{% load static i18n %}
+
+<h3>Home</h3>
+
+<p class="pb-3">
+    This project introduces and demonstrates a number of concepts related to ranges - and specifically the use of range
+    fields - in Django.
+</p>
+
+<h4>Project Description</h4>
+
+<p>
+    The local municipality has commissioned us to build a scheduling tool that will allow customers to make
+    reservations for their public swimming pools.
+</p>
+
+<p>
+    In order to do this, we have set up some arbitrary goals and business rules for scheduling, in order to try out
+    a number of different examples when it comes to working with ranges.
+</p>
+
+<div class="pb-5 m-2">
+    <h5>Pools</h5>
+    <ul>
+        <li>Multiple <code>Pool</code> instances can exist in the project.</li>
+        <li>We use <code>IntegerRangeField</code> to track the Pool's range of depth (from shallow end to deep end),
+            and the business hours. For simplicity, we are making a business rule assumption here that business hours
+            are always the same and must be contained within hourly values from 0 through 23.</li>
+    </ul>
+
+    <h5>Lanes & Lane Reservations</h5>
+    <ul>
+        <li>Multiple <code>Lane</code> instances can exist within a <code>Pool</code>.</li>
+        <li>Lanes within a Pool can be reserved using a <code>LaneReservation</code> with one or more Users associated
+            (the total number of people must not exceed the Lane's <code>max_swimmers</code> value at any time).</li>
+        <li>We will add basic per-hour pricing. If a Locker is reserved less than an hour,
+            we will simply multiply the time reserved by the per-hour pricing.</li>
+        <li>We track the reservation time and the actual check-in & check-out datetimes with two fields using
+            <code>DateTimeRangeField</code>.</li>
+    </ul>
+
+    <h5>Lockers & Locker Reservations</h5>
+    <ul>
+        <li>Multiple <code>Locker</code> instances can exist within a <code>Pool</code>.</li>
+        <li>Lockers within a Pool can be reserved using a <code>LockerReservation</code> with only one User associated
+            at any time (no overlapping reservations allowed).</li>
+        <li>We will add basic per-hour pricing. If a Locker is reserved less than an hour,
+            we will simply multiply the time reserved by the per-hour pricing.</li>
+        <li>We track the reservation time and the actual check-in & check-out datetimes with two fields using
+            <code>DateTimeRangeField</code>.</li>
+    </ul>
+</div>
+
+<h4 class="card-text">A light version of the project Entity Relationship Diagram showing just the model relationships:</h4>
+
+<p>
+    <img src="{% static 'img/erd_light.png' %}" alt="Entity Relationship Diagram (light)" >
+</p>
+
+<h4 class="card-text">The project Entity Relationship Diagram showing the model fields and relationships:</h4>
+
+<p>
+    <img src="{% static 'img/erd.png' %}" alt="Entity Relationship Diagram (full)" >
+</p>
+
+<h4 class="card-text">A stripped-down copy of <u>models.py</u> for quick reference.</h4>
+
+<pre class="m-0"><code class="language-python">
+class Pool(models.Model):
+    """An instance of a Pool. Multiple pools may exist within the municipality"""
+
+    name = models.CharField(_("Pool Name"), max_length=100)
+    address = models.TextField(_("Address"))
+    depth_range = IntegerRangeField(
+        _("Depth Range"),
+        help_text=_("What is the range in feet for the depth of this pool (shallow to deep)?"),
+    )
+    business_hours = IntegerRangeField(_("Business Hours"), default=(9, 17))
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
+class Closure(models.Model):
+    """A way of recording dates that a pool is closed"""
+
+    reasons_list = [
+        "Planned maintenance",
+        "Boss' birthday celebration",
+        "An important holiday 🎉",
+        "Pool draining and refill",
+        "Sinkhole opened up under pool",
+        "Municipal cost measures",
+        "Can't be bothered to open up 😶",
+        "Filter cleaning",
+        "Biohazard ☣ in pool 😬",
+        "Safety inspection",
+        "Repainting",
+        "Penguin 🐧 infestation",
+        "Locker room retrofit",
+        "Repaving parking lot",
+        "Too many fish in the pool",
+        "Stuck at home because kitty wanted to sit on my lap 🤷",
+        "Front door is broken",
+        "Lost keys to the building",
+        "Bake sale 🥧 - all hands needed",
+        "Lifeguard has time off",
+        "Forgot to pay water bill 🚱",
+        "Meteor damage 🌌 - requires repair",
+    ]
+
+    pool = models.ForeignKey(Pool, on_delete=models.CASCADE, related_name="closures")
+    dates = DateRangeField(_("Pool Closure Dates"))
+    reason = models.TextField(_("Closure Reason"))
+
+    class Meta:
+        ordering = ["pool__name"]
+
+    def __str__(self):
+        return f"{self.pool} ({self.dates.lower:%Y-%m-%d} - {self.dates.upper:%Y-%m-%d})"
+
+
+class Lane(models.Model):
+    """Each pool may have multiple lanes, each of which can be reserved by multiple people"""
+
+    name = models.CharField(_("Lane Name"), max_length=50)
+    pool = models.ForeignKey(Pool, on_delete=models.CASCADE, related_name="lanes")
+    max_swimmers = models.PositiveSmallIntegerField(
+        _("Maximum Swimmers"),
+    )
+    per_hour_cost = models.DecimalField(_("Per-Hour Cost"), max_digits=5, decimal_places=2)
+
+    class Meta:
+        ordering = ["pool__name"]
+
+    def __str__(self):
+        return f"{self.pool}: {self.name}"
+
+
+class Locker(models.Model):
+    """Each pool may have multiple lockers, each of which can be reserved by only one person at a time"""
+
+    # Using CharField, because sometimes locker number might be "A23" or "56-B"
+    number = models.CharField(_("Locker Number"), max_length=20)
+    pool = models.ForeignKey(Pool, on_delete=models.CASCADE, related_name="lockers")
+    per_hour_cost = models.DecimalField(_("Per-Hour Cost"), max_digits=5, decimal_places=2)
+
+    class Meta:
+        ordering = ["pool__name"]
+
+    def __str__(self):
+        return f"{self.pool}: Locker {self.number}"
+
+
+class LaneReservation(models.Model):
+    """A lane reservations defines a set of users, a period of time, and a pool lane"""
+
+    users = models.ManyToManyField(User, related_name="lane_reservations")
+    lane = models.ForeignKey(Lane, on_delete=models.CASCADE, related_name="lane_reservations")
+    period = DateTimeRangeField(
+        _("Reservation Period"),
+        validators=[
+            DateTimeRangeLowerMinuteValidator(0, 30),
+            DateTimeRangeUpperMinuteValidator(0, 30),
+            validate_zeroed_dt_sec_microsec,
+        ],
+    )
+    actual = DateTimeRangeField(_("Actual Usage Period"), default=(None, None))
+    cancelled = models.DateTimeField(_("Reservation is Cancelled"), null=True)
+
+    class Meta:
+        ordering = ["lane__pool__name", "period"]
+        constraints = [
+            # No Lane should have overlapping reservations
+            ExclusionConstraint(
+                name="excl_overlap_lane_res",
+                expressions=[
+                    ("period", RangeOperators.OVERLAPS),
+                    ("lane", RangeOperators.EQUAL),
+                ],
+                # Ignore overlaps where the reservation is cancelled
+                condition=Q(cancelled=None),
+            ),
+            # ToDo: No User should be included in more than one reservation at a time
+            # ToDo:Reservations should have less than max number of swimmers
+        ]
+
+    def __str__(self):
+        return f"{self.lane} ({self.period.lower:%Y-%m-%d %H:%M} - {self.period.upper:%Y-%m-%d %H:%M})"
+
+    def cancel_reservation(self):
+        self.cancelled = timezone.now()
+        self.save(
+            update_fields=[
+                "cancelled",
+            ]
+        )
+        return True
+
+    def check_in(self):
+        self.actual.startswith = timezone.now()
+        self.save()
+        return True
+
+    def check_out(self):
+        self.actual.endswith = timezone.now()
+        self.save()
+        return True
+
+
+class LockerReservation(models.Model):
+    """A locker reservation defines a user, a period of time, and a pool locker"""
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="locker_reservations")
+    locker = models.ForeignKey(Locker, on_delete=models.CASCADE, related_name="locker_reservations")
+    period = DateTimeRangeField(
+        _("Reservation Period"),
+        validators=[
+            DateTimeRangeLowerMinuteValidator(0, 30),
+            DateTimeRangeUpperMinuteValidator(0, 30),
+            validate_zeroed_dt_sec_microsec,
+        ],
+    )
+    actual = DateTimeRangeField(_("Actual Usage Period"), default=(None, None))
+    cancelled = models.DateTimeField(_("Reservation is Cancelled"), null=True)
+
+    class Meta:
+        ordering = ["locker__pool__name", "period"]
+        constraints = [
+            # No Locker should have overlapping reservations
+            ExclusionConstraint(
+                name="excl_overlap_locker_res",
+                expressions=[
+                    ("period", RangeOperators.OVERLAPS),
+                    ("locker", RangeOperators.EQUAL),
+                ],
+                # Ignore overlaps where the reservation is cancelled
+                condition=Q(cancelled=None),
+            ),
+            # No User should have more than one reservation at a time
+            ExclusionConstraint(
+                name="excl_overlap_user_locker_res",
+                expressions=[
+                    ("period", RangeOperators.OVERLAPS),
+                    ("user", RangeOperators.EQUAL),
+                ],
+                # Ignore overlaps where the reservation is cancelled
+                condition=Q(cancelled=None),
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.locker} ({self.period.lower:%Y-%m-%d %H:%M} - {self.period.upper:%Y-%m-%d %H:%M})"
+
+    def cancel_reservation(self):
+        self.cancelled = timezone.now()
+        self.save(
+            update_fields=[
+                "cancelled",
+            ]
+        )
+        return True
+</code></pre>
+
+<h4 class="card-text">Custom Validations</h4>
+
+<p>
+    These models make use of validators defined in *validators.py*.
+</p>
+
+
+<pre class="m-0"><code class="language-python">
+from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator, MinValueValidator
+
+
+class DateTimeRangeUpperMinuteValidator(MaxValueValidator):
+    """
+    Given a list of integer minute values (e.g.: [0, 30]) validation fails if a.upper is missing,
+        or if a is not in the limit_value list
+    """
+
+    def compare(self, a, b):
+        if isinstance(b, int):
+            b = list(
+                [
+                    b,
+                ]
+            )
+        return a.upper is None or a.upper.minute not in b
+
+    message = "Ensure that the upper bound of the range is in %(limit_value)s."
+
+
+class DateTimeRangeLowerMinuteValidator(MinValueValidator):
+    """
+    Given a list of integer minute values (e.g.: [0, 30]) validation fails if a.lower is missing,
+        or if a is not in the limit_value list
+    """
+
+    def compare(self, a, b):
+        if isinstance(b, int):
+            b = list(
+                [
+                    b,
+                ]
+            )
+        return a.lower is None or a.lower.minute not in b
+
+    message = "Ensure that the lower bound of the range is in %(limit_value)s."
+
+
+class DateTimeRangeMinDurationValidator(MinValueValidator):
+    """
+    Given a datetime.timedelta object, ensures the DateTimeRangeField duration is greater than or equal in length
+    """
+
+    def compare(self, a, b):
+
+        return a.upper - a.lower >= b
+
+    message = "Ensure that the duration is greater than or equal to %(limit_value)s."
+
+
+class DateTimeRangeMaxDurationValidator(MinValueValidator):
+    """
+    Given a datetime.timedelta object, ensures the DateTimeRangeField duration is less than or equal in length
+    """
+
+    def compare(self, a, b):
+
+        return a.upper - a.lower <= b
+
+    message = "Ensure that the duration is less than or equal to %(limit_value)s."
+
+
+def validate_zeroed_dt_sec_microsec(value):
+    if (
+        value.lower.second != 0
+        or value.lower.microsecond != 0
+        or value.upper.second != 0
+        or value.upper.microsecond != 0
+    ):
+        raise ValidationError(
+            f"Seconds and Microseconds for {value} are not zeroed out.",
+            code="validate_zeroed",
+        )
+
+    return True
+</code></pre>
+
+<script>
+    hljs.highlightAll();
+</script>

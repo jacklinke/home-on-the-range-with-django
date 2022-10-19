@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% load static i18n %}
+
+{% block content_title %}Pool Tools{% endblock content_title %}
+
+{% block content %}
+
+<ul class="nav nav-tabs" id="myTab" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active"
+                id="home-tab"
+                data-bs-toggle="tab"
+                type="button"
+                role="tab"
+                aria-controls="toolTabContent"
+                aria-selected="true">Home</button>
+    </li>
+    <li class="nav-item dropdown" role="presentation">
+        <button class="nav-link dropdown-toggle"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+                type="button"
+                role="button">No Input Required</button>
+        <ul class="dropdown-menu">
+            <li>
+                <button class="nav-link text-start"
+                        hx-get=""
+                        hx-target="#toolTabContent"
+                        hx-swap="innerHTML"
+                        data-bs-toggle="tab"
+                        type="button"
+                        role="tab"
+                        aria-controls="toolTabContent"
+                        aria-selected="false">* Placeholder</button>
+            </li>
+        </ul>
+    </li>
+    <li class="nav-item dropdown" role="presentation">
+        <button class="nav-link dropdown-toggle"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+                type="button"
+                role="button">Requires User Input</button>
+        <ul class="dropdown-menu">
+            <li>
+                <button class="nav-link text-start"
+                        hx-get=""
+                        hx-target="#toolTabContent"
+                        hx-swap="innerHTML"
+                        data-bs-toggle="tab"
+                        type="button"
+                        role="tab"
+                        aria-controls="toolTabContent"
+                        aria-selected="false">* Placeholder</button>
+            </li>
+        </ul>
+    </li>
+</ul>
+
+<div class="tab-content m-3" id="toolTabContent"></div>
+
+{% endblock content %}

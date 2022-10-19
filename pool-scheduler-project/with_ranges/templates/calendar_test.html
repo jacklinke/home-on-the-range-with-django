@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='utf-8' />
+    <script type="text/javascript" src="https://unpkg.com/vis-timeline@latest/standalone/umd/vis-timeline-graph2d.min.js"></script>
+    <link href="https://unpkg.com/vis-timeline@latest/styles/vis-timeline-graph2d.min.css" rel="stylesheet" type="text/css" />
+
+    <style>
+        #visualization {
+            box-sizing: border-box;
+            width: 100%;
+        }
+    </style>
+
+    <!-- note: moment.js must be loaded before vis-timeline-graph2d or the embedded version of moment.js is used -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment.min.js"></script>
+
+</head>
+<body>
+
+    <div id="visualization"></div>
+    <script>
+        var groups = new vis.DataSet(
+            {% autoescape off %}{{ calendar_lanes }}{% endautoescape %}
+        );
+
+        // function to make all groups visible again
+        function showAllGroups() {
+            groups.forEach(function(group) {
+                groups.update({
+                    id: group.id,
+                    visible: true
+                });
+            })
+        };
+
+        // create a dataset with items
+        var items = new vis.DataSet(
+            {% autoescape off %}{{ calendar_reservations }}{% endautoescape %}
+        )
+
+        // create visualization
+        var container = document.getElementById('visualization');
+        var options = {
+            // option groupOrder can be a property name or a sort function
+            // the sort function must compare two groups and return a value
+            //     > 0 when a > b
+            //     < 0 when a < b
+            //       0 when a == b
+            groupOrder: function(a, b) {
+                return a.value - b.value;
+            },
+            groupOrderSwap: function(a, b, groups) {
+                var v = a.value;
+                a.value = b.value;
+                b.value = v;
+            },
+            groupTemplate: function(group) {
+                var container = document.createElement('div');
+                var label = document.createElement('span');
+                label.innerHTML = group.content + ' ';
+                container.insertAdjacentElement('afterBegin', label);
+                var hide = document.createElement('button');
+                hide.innerHTML = 'hide';
+                hide.style.fontSize = 'small';
+                hide.addEventListener('click', function() {
+                    groups.update({
+                        id: group.id,
+                        visible: false
+                    });
+                });
+                container.insertAdjacentElement('beforeEnd', hide);
+                return container;
+            },
+            orientation: 'both',
+            editable: false,
+            groupEditable: true,
+            height: "600px",
+            preferZoom: false,
+            verticalScroll:true,
+            zoomKey: "ctrlKey",
+            tooltip: {
+                template: function (originalItemData, parsedItemData) {
+                    return `<b>${originalItemData.start} to ${originalItemData.end}</b>`;
+                }
+            },
+        };
+
+        var timeline = new vis.Timeline(container);
+        timeline.setOptions(options);
+        timeline.setGroups(groups);
+        timeline.setItems(items);
+
+    </script>
+</body>
+</html>

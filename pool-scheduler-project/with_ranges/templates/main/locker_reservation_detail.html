@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% load static i18n %}
+
+{% block content_title %}Locker Reservation Details{% endblock content_title %}
+
+{% block content %}
+
+    {{ locker_reservation }}
+
+    <div id="reservationActualUsageDisplay"></div>
+
+    <p></p>
+
+    <br>
+    Locker Assigned to {{ locker_reservation.user.first_name }} {{ locker_reservation.user.last_name }}
+    (<a href="{% url 'users:user_detail_view' user_id=locker_reservation.user.id %}" title="Click to view User Details">
+        {{ locker_reservation.user.email }}
+    </a>)
+
+    <p>
+        <div id="checkInOutButtons"
+             hx-get="{% url 'main:locker_reservation_actual_buttons' locker_reservation_id=locker_reservation.id %}"
+             hx-trigger="load"
+             hx-target="#checkInOutButtons"
+             hx-swap="innerHTML">
+        </div>
+    </p>
+
+    <p class="p-3">
+        <a href="{% url 'main:reservation_list_view' %}" class="btn btn-secondary" id="sidebarToggle2">
+            <i class="bi-arrow-left text-white fs-3 m-0"></i>
+        </a>
+    </p>
+
+    <script>
+        /* Enable OOB Swaps https://htmx.org/examples/update-other-content/ */
+        htmx.config.useTemplateFragments = true;
+    </script>
+
+{% endblock content %}

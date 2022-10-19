@@ -1,0 +1,8 @@
+db.sqlite3
+env
+__pycache__
+venv
+.pytest_cache/
+.coverage
+staticfiles/
+

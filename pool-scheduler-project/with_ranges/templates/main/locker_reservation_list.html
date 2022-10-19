@@ -1,0 +1,54 @@
+{% load static i18n %}
+
+
+<div class="pagination mb-4">
+    <span class="step-links">
+        {% if locker_reservations_page.has_previous %}
+            <btn class="btn btn-secondary"
+                 hx-get="{% url 'main:locker_reservation' %}?page=1"
+                 hx-swap="innerHTML"
+                 hx-target="#lockerReservationsContent">&laquo; first</btn>
+            <btn class="btn btn-secondary"
+                 hx-get="{% url 'main:locker_reservation' %}?page={{ locker_reservations_page.previous_page_number }}"
+                 hx-swap="innerHTML"
+                 hx-target="#lockerReservationsContent">previous</btn>
+        {% else %}
+            <btn class="btn btn-light" disabled="true">&laquo; first</btn>
+            <btn class="btn btn-light" disabled="true">previous</btn>
+        {% endif %}
+
+        <span class="current m-2">
+            Page {{ locker_reservations_page.number }} of {{ locker_reservations_page.paginator.num_pages }}.
+        </span>
+
+        {% if locker_reservations_page.has_next %}
+            <btn class="btn btn-secondary"
+                 hx-get="{% url 'main:locker_reservation' %}?page={{ locker_reservations_page.next_page_number }}"
+                 hx-swap="innerHTML"
+                 hx-target="#lockerReservationsContent">next</btn>
+            <btn class="btn btn-secondary"
+                 hx-get="{% url 'main:locker_reservation' %}?page={{ locker_reservations_page.paginator.num_pages }}"
+                 hx-swap="innerHTML"
+                 hx-target="#lockerReservationsContent">last &raquo;</btn>
+        {% else %}
+            <btn class="btn btn-light">next</btn>
+            <btn class="btn btn-light">last &raquo;</btn>
+        {% endif %}
+    </span>
+</div>
+
+{% for locker_reservation in locker_reservations_page %}
+    <p>
+        <b>Locker Number {{ locker_reservation.locker.number }} at {{ locker_reservation.locker.pool }}</b><br>
+        <span class="mx-5">
+            From {{ locker_reservation.period.lower }} -to- {{ locker_reservation.period.upper }}:
+        </span>
+        <br>
+        <a href="{% url 'main:locker_reservation_detail_view' locker_reservation_id=locker_reservation.id %}"
+           title="Click to view Reservation Details"
+           class="mx-5">
+            Click to view Reservation Details
+        </a>
+    </p>
+    <br>
+{% endfor %}

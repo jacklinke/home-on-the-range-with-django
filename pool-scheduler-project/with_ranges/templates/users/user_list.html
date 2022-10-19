@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% load static i18n %}
+
+{% block content_title %}Users{% endblock content_title %}
+
+
+{% block content %}
+    <p>
+    List of Users:
+    </p>
+
+    User Email (is staff <i class="bi-check"></i>)<br>
+    <ul>
+        {% for user in users.all %}
+            <li>
+                <a href="{% url 'users:user_detail_view' user_id=user.id %}">{{ user.email }}</a>
+                {% if user.is_staff %}<i class="bi-check"></i>{% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+{% endblock content %}

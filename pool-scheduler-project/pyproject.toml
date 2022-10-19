@@ -1,0 +1,9 @@
+[tool.coverage.run]
+plugins = [
+    'django_coverage_plugin',
+]
+source = ['apps']
+
+[tool.coverage.django_coverage_plugin]
+template_extensions = 'html, txt, tex, email'
+

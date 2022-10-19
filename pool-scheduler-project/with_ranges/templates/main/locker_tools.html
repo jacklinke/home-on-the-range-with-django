@@ -1,0 +1,323 @@
+{% extends "base.html" %}
+
+{% load static i18n %}
+
+{% block content_title %}Locker Tools{% endblock content_title %}
+
+
+{% block content %}
+
+<ul class="nav nav-tabs" id="myTab" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active"
+                hx-get="{% url 'main:home_partial_view' %}"
+                hx-target="#toolTabContent"
+                hx-swap="innerHTML"
+                id="home-tab"
+                data-bs-toggle="tab"
+                type="button"
+                role="tab"
+                aria-controls="toolTabContent"
+                aria-selected="true">Home</button>
+    </li>
+    <li class="nav-item dropdown" role="presentation">
+        <button class="nav-link dropdown-toggle"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+                type="button"
+                role="button">No Input Required</button>
+        <ul class="dropdown-menu">
+            <li>
+                <button class="nav-link text-start"
+{#                        hx-get="{% url 'main:locker_reservations_greater_than_eight_hr' %}"#}
+                        hx-target="#toolTabContent"
+                        hx-swap="innerHTML"
+                        data-bs-toggle="tab"
+                        type="button"
+                        role="tab"
+                        aria-controls="toolTabContent"
+                        aria-selected="false">Placeholder</button>
+            </li>
+        </ul>
+    </li>
+    <li class="nav-item dropdown" role="presentation">
+        <button class="nav-link dropdown-toggle"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+                type="button"
+                role="button">Requires User Input</button>
+        <ul class="dropdown-menu">
+            <li>
+                <button class="nav-link text-start"
+                        hx-get=""
+                        hx-target="#toolTabContent"
+                        hx-swap="innerHTML"
+                        data-bs-toggle="tab"
+                        type="button"
+                        role="tab"
+                        aria-controls="toolTabContent"
+                        aria-selected="false">* Placeholder</button>
+            </li>
+        </ul>
+    <li class="nav-item dropdown" role="presentation">
+        <button class="nav-link dropdown-toggle"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+                type="button"
+                role="button">Reservations - No Input Required</button>
+        <ul class="dropdown-menu">
+            <li>
+                <button class="nav-link text-start"
+                        hx-get="{% url 'main:locker_reservations_greater_than_thirty_days' %}"
+                        hx-target="#toolTabContent"
+                        hx-swap="innerHTML"
+                        data-bs-toggle="tab"
+                        type="button"
+                        role="tab"
+                        aria-controls="toolTabContent"
+                        aria-selected="false">Reservations greater than 30 days in Length</button>
+            </li>
+            <li>
+                <button class="nav-link text-start"
+                        hx-get="{% url 'main:locker_reservations_this_month' %}"
+                        hx-target="#toolTabContent"
+                        hx-swap="innerHTML"
+                        data-bs-toggle="tab"
+                        type="button"
+                        role="tab"
+                        aria-controls="toolTabContent"
+                        aria-selected="false">Reservations This Month</button>
+            </li>
+            <li>
+                <button class="nav-link text-start"
+                        hx-get="{% url 'main:locker_reservations_in_the_past' %}"
+                        hx-target="#toolTabContent"
+                        hx-swap="innerHTML"
+                        data-bs-toggle="tab"
+                        type="button"
+                        role="tab"
+                        aria-controls="toolTabContent"
+                        aria-selected="false">All Past Reservations</button>
+            </li>
+            <li>
+                <button class="nav-link text-start"
+                        hx-get="{% url 'main:locker_reservations_year_to_date' %}"
+                        hx-target="#toolTabContent"
+                        hx-swap="innerHTML"
+                        data-bs-toggle="tab"
+                        type="button"
+                        role="tab"
+                        aria-controls="toolTabContent"
+                        aria-selected="false">Reservations Year-to-Date</button>
+            </li>
+            <li>
+                <button class="nav-link text-start"
+                        hx-get="{% url 'main:locker_reservations_til_end_of_year' %}"
+                        hx-target="#toolTabContent"
+                        hx-swap="innerHTML"
+                        data-bs-toggle="tab"
+                        type="button"
+                        role="tab"
+                        aria-controls="toolTabContent"
+                        aria-selected="false">Reservations now til End-of-Year</button>
+            </li>
+            <li>
+                <button class="nav-link text-start"
+                        hx-get="{% url 'main:locker_reservations_oct_or_dec_this_year' %}"
+                        hx-target="#toolTabContent"
+                        hx-swap="innerHTML"
+                        data-bs-toggle="tab"
+                        type="button"
+                        role="tab"
+                        aria-controls="toolTabContent"
+                        aria-selected="false">Reservations that end in October or December of this Year</button>
+            </li>
+            <li>
+                <button class="nav-link text-start"
+                        hx-get="{% url 'main:locker_reservations_overdue_start' %}"
+                        hx-target="#toolTabContent"
+                        hx-swap="innerHTML"
+                        data-bs-toggle="tab"
+                        type="button"
+                        role="tab"
+                        title="Reservation start time passed, but the party has not yet checked in"
+                        aria-controls="toolTabContent"
+                        aria-selected="false">Overdue Start</button>
+            </li>
+            <li>
+                <button class="nav-link text-start"
+                        hx-get="{% url 'main:locker_reservations_overdue_end' %}"
+                        hx-target="#toolTabContent"
+                        hx-swap="innerHTML"
+                        data-bs-toggle="tab"
+                        type="button"
+                        role="tab"
+                        title="Reservation end time passed, but the party has not yet checked out"
+                        aria-controls="toolTabContent"
+                        aria-selected="false">Overdue End</button>
+            </li>
+            <li>
+                <button class="nav-link text-start"
+                        hx-get="{% url 'main:locker_reservations_average_length_of_all' %}"
+                        hx-target="#toolTabContent"
+                        hx-swap="innerHTML"
+                        data-bs-toggle="tab"
+                        type="button"
+                        role="tab"
+                        aria-controls="toolTabContent"
+                        aria-selected="false">Average length of all Reservations</button>
+            </li>
+        </ul>
+    </li>
+    <li class="nav-item dropdown" role="presentation">
+        <button class="nav-link dropdown-toggle"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+                type="button"
+                role="button">Reservations - Requires User Input</button>
+        <ul class="dropdown-menu">
+            <li>
+                <button class="nav-link text-start"
+                        hx-get="{% url 'main:locker_reservations_overlapping_date' %}"
+                        hx-target="#toolTabContent"
+                        hx-swap="innerHTML"
+                        data-bs-toggle="tab"
+                        type="button"
+                        role="tab"
+                        aria-controls="toolTabContent"
+                        aria-selected="false">Reservations containing a date</button>
+            </li>
+            <li>
+                <button class="nav-link text-start"
+                        hx-get="{% url 'main:locker_reservations_overlapping_datetime_form' %}"
+                        hx-target="#toolTabContent"
+                        hx-swap="innerHTML"
+                        data-bs-toggle="tab"
+                        type="button"
+                        role="tab"
+                        aria-controls="toolTabContent"
+                        aria-selected="false">Reservations overlapping datetime range (Forms with CharField)</button>
+            </li>
+            <li>
+                <button class="nav-link text-start"
+                        hx-get="{% url 'main:locker_reservations_overlapping_datetime_rangefield_form' %}"
+                        hx-target="#toolTabContent"
+                        hx-swap="innerHTML"
+                        data-bs-toggle="tab"
+                        type="button"
+                        role="tab"
+                        aria-controls="toolTabContent"
+                        aria-selected="false">Reservations overlapping datetime range (Forms with DateTimeRangeField)</button>
+            </li>
+            <li>
+                <button class="nav-link text-start"
+                        hx-get="{% url 'main:locker_reservations_overlapping_datetime_manual' %}"
+                        hx-target="#toolTabContent"
+                        hx-swap="innerHTML"
+                        data-bs-toggle="tab"
+                        type="button"
+                        role="tab"
+                        aria-controls="toolTabContent"
+                        aria-selected="false">Reservations overlapping datetime range (manually rendered input)</button>
+            </li>
+            <li>
+                <button class="nav-link text-start"
+{#                        hx-get=""#}
+                        hx-target="#toolTabContent"
+                        hx-swap="innerHTML"
+                        data-bs-toggle="tab"
+                        type="button"
+                        role="tab"
+                        aria-controls="toolTabContent"
+                        aria-selected="false">* Reservations fully less than datetime range</button>
+            </li>
+            <li>
+                <button class="nav-link text-start"
+{#                        hx-get=""#}
+                        hx-target="#toolTabContent"
+                        hx-swap="innerHTML"
+                        data-bs-toggle="tab"
+                        type="button"
+                        role="tab"
+                        aria-controls="toolTabContent"
+                        aria-selected="false">* Reservations fully greater than datetime range</button>
+            </li>
+            <li>
+                <button class="nav-link text-start"
+{#                        hx-get=""#}
+                        hx-target="#toolTabContent"
+                        hx-swap="innerHTML"
+                        data-bs-toggle="tab"
+                        type="button"
+                        role="tab"
+                        aria-controls="toolTabContent"
+                        aria-selected="false">* Reservations containing a datetime range</button>
+            </li>
+            <li>
+                <button class="nav-link text-start"
+{#                        hx-get=""#}
+                        hx-target="#toolTabContent"
+                        hx-swap="innerHTML"
+                        data-bs-toggle="tab"
+                        type="button"
+                        role="tab"
+                        aria-controls="toolTabContent"
+                        aria-selected="false">* Reservations contained by a datetime range</button>
+            </li>
+            <li>
+                <button class="nav-link text-start"
+{#                        hx-get=""#}
+                        hx-target="#toolTabContent"
+                        hx-swap="innerHTML"
+                        data-bs-toggle="tab"
+                        type="button"
+                        role="tab"
+                        aria-controls="toolTabContent"
+                        aria-selected="false">* Reservation lower matches any value in list</button>
+            </li>
+            <li>
+                <button class="nav-link text-start"
+{#                        hx-get=""#}
+                        hx-target="#toolTabContent"
+                        hx-swap="innerHTML"
+                        data-bs-toggle="tab"
+                        type="button"
+                        role="tab"
+                        aria-controls="toolTabContent"
+                        aria-selected="false">* Reservations overlapping list of datetimes</button>
+            </li>
+            <li>
+                <button class="nav-link text-start"
+{#                        hx-get=""#}
+                        hx-target="#toolTabContent"
+                        hx-swap="innerHTML"
+                        data-bs-toggle="tab"
+                        type="button"
+                        role="tab"
+                        title="Aggregate count/sum of reservations during each hour of a daterange"
+                        aria-controls="toolTabContent"
+                        aria-selected="false">* Reservations per hour of a date</button>
+            </li>
+            <li>
+                <button class="nav-link text-start"
+{#                        hx-get=""#}
+                        hx-target="#toolTabContent"
+                        hx-swap="innerHTML"
+                        data-bs-toggle="tab"
+                        type="button"
+                        role="tab"
+                        title="Aggregate count/sum of reservations during each hour of a daterange"
+                        aria-controls="toolTabContent"
+                        aria-selected="false">* Revenue for Reservations per hour of a daterange</button>
+            </li>
+        </ul>
+    </li>
+</ul>
+
+<div class="tab-content m-3"
+     id="toolTabContent"
+     hx-get="{% url 'main:home_partial_view' %}"
+     hx-trigger="load"
+     hx-swap="innerHTML"></div>
+
+{% endblock content %}

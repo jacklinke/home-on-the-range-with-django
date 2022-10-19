@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang=en-GB>
+
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<title>Home on the range with Django - getting comfortable with ranges and range fields</title>
+
+<link rel="stylesheet" href="dist/reset.css">
+<link rel="stylesheet" href="dist/reveal.css">
+<link rel="stylesheet" href="dist/theme/django.css">
+
+<!-- Theme used for syntax highlighted code -->
+<link rel="stylesheet" href="plugin/highlight/monokai.css">
+
+<style>
+  .hljs-deletion { color: #e22e2e }
+</style>
+</head>
+
+<body>
+<div class="reveal">
+<div class="slides">
+
+<section data-background-image="img/dcus2022_corner.png" class="mt-neg-40 mtp-neg-0 has-dark-background" data-markdown>
+  <script type="text/template">
+  <!-- .slide: style="color:white" -->
+    Jack Linke
+    [@JackDLinke](https://twitter.com/JackDLinke)
+    [jacklinke.com](https://jacklinke.com)
+
+    Managing Director [Watervize](https://watervize.com) - SaaS for Irrigation
+
+    👬 Husband &nbsp;&nbsp;&nbsp; 🎤 Public Speaker
+    🧠 ND &nbsp;&nbsp;&nbsp; 🪖 Veteran &nbsp;&nbsp;&nbsp; 🌈 he/him
+
+    
+  </script>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-100 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    # Home on the range with Django
+    #### Getting comfortable with ranges and range fields
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-140 mtp-neg-140" data-markdown>
+  <textarea data-template>
+    ## Disclaimers
+
+    - Topic might be challenging for beginners
+      - (But exposure to these concepts early may help avoid pitfalls later)
+    - Postgres-specific
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-140 mtp-neg-140" data-markdown>
+  <textarea data-template>
+    ## Goals
+
+    - Learn why ranges can be more useful than distinct start & end values
+    - Become familiar with range / interval terminology
+    - See a number of approaches to using & querying with ranges
+    - Have resources for further reading & learning
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-80 mtp-neg-100 " data-markdown>
+  <textarea data-template>
+    ## Real Life
+
+    - 🌡 Daily Temperature highs/lows <!-- .element: style="font-size:26px" -->
+    - 🏠 Budget range for home renovation <!-- .element: style="font-size:26px" -->
+    - 🎹 Range of frequencies for each musical instrument <!-- .element: style="font-size:26px" -->
+    - ⛽ Range of gas prices in each region <!-- .element: style="font-size:26px" -->
+    - 🍲 Range of calories in fast food meals <!-- .element: style="font-size:26px" -->
+    - 🏈⚽ Range of goals/touchdowns for each team & season <!-- .element: style="font-size:26px" -->
+    - 🕛 Daily business hours <!-- .element: style="font-size:26px" -->
+    - 💰 Salary range for different jobs <!-- .element: style="font-size:26px" -->
+    - 🌱 Suitable soil pH values for different plants <!-- .element: style="font-size:26px" -->
+    - 🎉 Start & end date/datetime of Events <!-- .element: style="font-size:26px" -->
+    - 🚙 Typical min/max driving duration between locations <!-- .element: style="font-size:26px" -->
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-140 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    ## History
+
+    - First available in Postgres 9.2 (2011)
+    - First available in Django in 2015
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-140 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    ## Typical Approach
+
+    - Separate **`start`** and **`stop`** model fields
+    - Querying with start and stop values
+    - Quickly gets complicated
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-100 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    #### Model Constraint Comparison - separate fields
+
+    - 2 separate fields (DB doesn't know they are related)
+    - Have to build logic to ensure you don't end up with...
+      - salary_range = $200,000 to $140,000 😬
+      - event_dates = 2022/10/21 to 2022/10/16 🤔
+    - Constraint to prevent overlaps
+      - Have to write an expression to trick the DB into treating 2 fields (and boundary) as a range type
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-20 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    #### Model Constraint Comparison - separate fields
+    <img src="img/model_constraint_before.png" height="20%" alt="Django model with constraints before using ranges"> <!-- .element: style="max-height:450px" -->
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-100 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    #### Model Constraint Comparison - range field
+
+    - 1 field stores the lower, upper, and boundary information
+      - DB knows these are all related
+
+    - By default, Postgres won't let you use larger value in lower position
+      - salary_range = $140,000 to $200,000 🤑
+      - event_dates = 2022/10/16 to 2022/10/21 😎
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-20 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    #### Model Constraint Comparison - range field
+    <img src="img/model_constraint_after.png" height="20%" alt="Django model with constraints before using ranges"> <!-- .element: style="max-height:450px" -->
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-100 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    #### Query Comparison - separate fields
+
+    - Queries have to include both fields
+    - Often unintuitive in which order lookups are used
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-20 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    #### Query Comparison - separate fields
+    <img src="img/overlap_query_before.png" height="20%" alt="Django model with constraints before using ranges"> <!-- .element: style="max-height:450px" -->
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-20 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    #### Query Comparison - separate fields
+    <img src="img/overlap_query_before_highlight.png" height="20%" alt="Django model with constraints before using ranges"> <!-- .element: style="max-height:450px" -->
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-100 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    #### Query Comparison - range field
+
+    - Use a single, intuitive lookup
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-20 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    #### Query Comparison - range field
+    <img src="img/overlap_query_after_highlight.png" height="20%" alt="Django model with constraints before using ranges"> <!-- .element: style="max-height:450px" -->
+  </textarea>
+</section>
+
+
+<section data-background-image="img/bg.png" class="mt-neg-20 mtp-neg-100" data-markdown>
+  <textarea data-template>
+    ## Terminology
+
+    Going back to Elementary School (but no tests - I promise)
+
+    <img src="img/scary-school.jpg" height="20%" alt="Scary looking school - image from Reddit user D-maye-reddits"> <!-- .element: style="max-height:350px" -->
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-100 mtp-neg-100" data-markdown>
+  <textarea data-template>
+    ## Terminology
+
+    - Ranges = Intervals
+    - Inclusive = Closed
+    - Exclusive = Open
+
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-40 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    ##### Inclusive vs Exclusive
+    <img src="img/RangeLookups-inclusive_exclusive.png" height="20%" alt="Visual explanation of inclusive vs exclusive intervals"> <!-- .element: style="max-height:400px" -->
+  </textarea>
+
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-40 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    ##### Inclusive vs Exclusive
+    <img src="img/RangeLookups-inclusive_exclusive_highlight.png" height="20%" alt="Visual explanation of inclusive vs exclusive intervals"> <!-- .element: style="max-height:400px" -->
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-80 mtp-neg-100" data-markdown>
+  <textarea data-template>
+    ##### Inclusive vs Exclusive
+
+    <br>
+
+    Another way to look at this
+
+    [1, 3] = 1 **≤** *x* **≤** 3
+
+    [1, 3) = 1 **≤** *x* **<** 3
+
+    (1, 3] = 1 **<** *x* **≤** 3
+
+    (1, 3) = 1 **<** *x* **<** 3
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-20 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    #### *Range* Overlaps *Range*
+    <img src="img/RangeLookups-range overlaps range.png" height="20%" alt="Visual explanation of inclusive vs exclusive intervals"> <!-- .element: style="max-height:450px" -->
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-20 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    #### *Range* Contains *Element*
+    <img src="img/RangeLookups-range contains element.png" height="20%" alt="Visual explanation of inclusive vs exclusive intervals"> <!-- .element: style="max-height:450px" -->
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-20 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    #### *Range* Contains *Range*
+    <img src="img/RangeLookups-range contains range.png" height="20%" alt="Visual explanation of inclusive vs exclusive intervals"> <!-- .element: style="max-height:450px" -->
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-20 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    #### *Element* Contained By *Range*
+    <img src="img/RangeLookups-element contained_by range.png" height="20%" alt="Visual explanation of inclusive vs exclusive intervals"> <!-- .element: style="max-height:450px" -->
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-40 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    #### *Range* Contained By *Range*
+    <img src="img/RangeLookups-range contained_by range.png" height="20%" alt="Visual explanation of inclusive vs exclusive intervals"> <!-- .element: style="max-height:450px" -->
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-20 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    #### *Range* Adjacent To *Range*
+    <img src="img/RangeLookups-range adjacent_to range.png" height="20%" alt="Visual explanation of inclusive vs exclusive intervals"> <!-- .element: style="max-height:450px" -->
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-20 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    #### *Range* Fully Less Than *Range*
+    <img src="img/RangeLookups-range fully_lt range.png" height="20%" alt="Visual explanation of inclusive vs exclusive intervals"> <!-- .element: style="max-height:450px" -->
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-20 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    #### *Range* Fully Greater Than *Range*
+    <img src="img/RangeLookups-range fully_gt range.png" height="20%" alt="Visual explanation of inclusive vs exclusive intervals"> <!-- .element: style="max-height:450px" -->
+  </textarea>
+</section>
+
+
+<section data-background-image="img/bg.png" class="mt-neg-80 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    #### psycopg2.extras
+
+    Provides tools for 'translation'
+    - NumericRange
+      - Postgres: int4range, int8range, numrange
+      - Django: IntegerRangeField, BigIntegerRangeField, DecimalRangeField
+
+    - DateRange
+      - Postgres: daterange
+      - Django: DateRangeField
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-80 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    #### psycopg2.extras (cont'd)
+
+    Provides tools for 'translation'
+    - DateTimeRange
+      - Postgres: tsrange
+      - Django: DateTimeRangeField (naive dt 💩)
+
+    - DateTimeTZRange
+      - Postgres: tstzrange
+      - Django: DateTimeRangeField
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-0 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    #### Defining Range Fields in Django
+
+    - Using psycopg2.extras classes
+      - Bounds default to "`[)`"
+      - Can be changed for non-discrete range fields with `default_bounds`
+      - (DateTimeRangeField and DecimalRangeField)
+    - Fields also accept tuples as input if no bounds information is necessary
+
+    <img src="img/ways_to_define_field.png" height="20%" alt="Django model with constraints before using ranges"> <!-- .element: style="max-height:450px" -->
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-100 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    #### Lookups based on range bounds
+
+    - **`startswith`**: filters on lower bound
+    - **`endswith`**: filters on upper bound
+    - **`isempty`**: filters on empty instances
+    - **`lower_inf`**: unbounded (infinite) or bounded lower bound
+      - e.g.: `date.min`
+    - **`upper_inf`**: unbounded (infinite) or bounded upper bound
+      - e.g.: `date.max`
+    - **`lower_inc`**: filters on inclusive or exclusive lower bounds
+    - **`upper_inc`**: filters on inclusive or exclusive upper bounds
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-20 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    #### Lookups based on range bounds
+
+    <img src="img/defining_ranges.png" height="20%" alt="Django model with constraints before using ranges"> <!-- .element: style="max-height:450px" -->
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-20 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    #### Lookups based on range bounds
+
+    <img src="img/defining_and_querying_ranges.png" height="20%" alt="Django model with constraints before using ranges"> <!-- .element: style="max-height:450px" -->
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-80 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    #### Creating your own range types
+
+    > "every data type that supports a btree operator class (that is, a way of ordering any two given values) can be used to create a range type."
+
+    - PostgreSQL 14 Administration Cookbook
+
+    *Example: GenericIPAddressField (postgres' `inet`) can be extended to create range of IP Addresses*
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-20 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    #### Indexing
+
+    Stick with GiST or B-Tree
+  </textarea>
+</section>
+
+
+
+
+<section data-background-image="img/bg.png" class="mt-neg-20 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    #### Example Project
+
+    <img src="img/erd_light.png" height="20%" alt="Django model with constraints before using ranges"> <!-- .element: style="max-height:450px" -->
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-20 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    #### Example Project
+
+    <img src="img/erd.png" height="20%" alt="Django model with constraints before using ranges"> <!-- .element: style="max-height:450px" -->
+  </textarea>
+</section>
+
+
+
+
+<section data-background-image="img/bg.png" class="mt-neg-60 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    #### Pitfalls
+
+    DateTimeRangeField in Admin
+
+    ![Ranges in Admin](img/admin_datetime_range_input.png)
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-100 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    #### Pitfalls
+
+    Trying to use `lower` and `upper` as callables
+
+    - They aren't.
+    - You can use `Lower` and `Upper` database functions in queries
+    - You can use `startswith` and `endswith` lookups
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-80 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    #### Pitfalls
+
+    Trying to use **`F()`** with the psycopg2.extra classes
+
+    They aren't Django classes! May have to use `Cast` to convert to a Django range field
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-20 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    #### Resources
+
+    - [psycopg2.extras](https://www.psycopg.org/docs/extras.html)
+    - [This talk & Example Project](https://github.com/jacklinke/home-on-the-range-with-django)
+    - [django-range-merge](https://github.com/jacklinke/django-range-merge/) - use `range_merge` aggregate with Django
+    - [django-generate-series](https://github.com/jacklinke/django-generate-series) - create sequences with Django's ORM
+  </textarea>
+</section>
+
+<section data-background-image="img/bg.png" class="mt-neg-20 mtp-neg-0" data-markdown>
+  <textarea data-template>
+    #### Final thought
+
+    A man works hard to name an interval equal to 24 hours...
+    
+    ...so he calls it a day.
+  </textarea>
+</section>
+
+</div>
+</div>
+
+<script src="dist/reveal.js"></script>
+<script src="plugin/highlight/highlight.js"></script>
+<script src="plugin/markdown/markdown.js"></script>
+<script>
+  Reveal.initialize({
+    slideNumber: true,
+    hash: true,
+
+    controls: false,
+    progress: false,
+
+    width: 1080,
+    height: 608,
+
+    plugins: [ RevealHighlight, RevealMarkdown ]
+  });
+</script>
+</body>
+</html>

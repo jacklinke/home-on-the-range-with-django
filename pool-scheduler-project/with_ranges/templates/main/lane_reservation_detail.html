@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% load static i18n %}
+
+{% block content_title %}Lane Reservation Details{% endblock content_title %}
+
+{% block content %}
+
+    {{ lane_reservation }}
+
+    <div id="reservationActualUsageDisplay"></div>
+
+    <div class="mt-4">
+        Lane Users during this period:
+    </div>
+    <br>
+
+    {% for user in lane_reservation.users.all %}
+        <span class="mx-5">
+            {{ forloop.counter }}.
+            <a href="{% url 'users:user_detail_view' user_id=user.id %}"
+               title="Click to view User Details">
+                {{ user.email }}
+            </a>
+        </span>
+        <br>
+    {% endfor %}
+
+    <p>
+        <div id="checkInOutButtons"
+             hx-get="{% url 'main:lane_reservation_actual_buttons' lane_reservation_id=lane_reservation.id %}"
+             hx-trigger="load"
+             hx-target="#checkInOutButtons"
+             hx-swap="innerHTML">
+        </div>
+    </p>
+
+    <p class="p-3">
+        <a href="{% url 'main:reservation_list_view' %}" class="btn btn-secondary" id="sidebarToggle2">
+            <i class="bi-arrow-left text-white fs-3 m-0"></i>
+        </a>
+    </p>
+
+    <script>
+        /* Enable OOB Swaps https://htmx.org/examples/update-other-content/ */
+        htmx.config.useTemplateFragments = true;
+    </script>
+
+{% endblock content %}

@@ -1,0 +1,1794 @@
+
+{% block locker_reservation_list %}
+    {% load static i18n %}
+
+    <div class="pagination mb-4">
+        <span class="step-links">
+            {% if locker_reservations_page.has_previous %}
+                <btn class="btn btn-secondary"
+                     hx-get="{% url 'main:locker_reservation' %}?page=1"
+                     hx-swap="innerHTML"
+                     hx-target="#lockerReservationsContent">&laquo; first</btn>
+                <btn class="btn btn-secondary"
+                     hx-get="{% url 'main:locker_reservation' %}?page={{ locker_reservations_page.previous_page_number }}"
+                     hx-swap="innerHTML"
+                     hx-target="#lockerReservationsContent">previous</btn>
+            {% else %}
+                <btn class="btn btn-light" disabled="true">&laquo; first</btn>
+                <btn class="btn btn-light" disabled="true">previous</btn>
+            {% endif %}
+
+            <span class="current m-2">
+                Page {{ locker_reservations_page.number }} of {{ locker_reservations_page.paginator.num_pages }}
+            </span>
+
+            {% if locker_reservations_page.has_next %}
+                <btn class="btn btn-secondary"
+                     hx-get="{% url 'main:locker_reservation' %}?page={{ locker_reservations_page.next_page_number }}"
+                     hx-swap="innerHTML"
+                     hx-target="#lockerReservationsContent">next</btn>
+                <btn class="btn btn-secondary"
+                     hx-get="{% url 'main:locker_reservation' %}?page={{ locker_reservations_page.paginator.num_pages }}"
+                     hx-swap="innerHTML"
+                     hx-target="#lockerReservationsContent">last &raquo;</btn>
+            {% else %}
+                <btn class="btn btn-light">next</btn>
+                <btn class="btn btn-light">last &raquo;</btn>
+            {% endif %}
+        </span>
+    </div>
+
+    {% for locker_reservation in locker_reservations_page %}
+        <p>
+            <b>Locker {{ locker_reservation.locker.number }} at {{ locker_reservation.locker.pool }}</b><br>
+            <span>
+                From {{ locker_reservation.period.lower }} -to- {{ locker_reservation.period.upper }}
+            </span>
+            <br>
+            <span>
+                Actual Usage: {{ locker_reservation.actual.lower }} -to- {{ locker_reservation.actual.upper }}
+            </span>
+            <br>
+            <span>
+                <a href="{% url 'main:locker_reservation_detail_view' locker_reservation_id=locker_reservation.id %}"
+                   title="Click to view Reservation Details">
+                    Click to view Reservation Details
+                </a>
+            </span>
+        </p>
+
+    {% endfor %}
+
+{% endblock %}
+
+
+
+
+
+{% block locker_reservation_actual_buttons %}
+    <div id="reservationActualUsageDisplayInner" hx-swap-oob="innerHTML:#reservationActualUsageDisplay">
+        Actual usage: {{ locker_reservation.actual.lower }} through {{ locker_reservation.actual.upper }}
+    </div>
+
+    {% if not locker_reservation.actual.lower %}
+        <div class="btn btn-success"
+             hx-get="{% url 'main:locker_reservation_check_in' locker_reservation_id=locker_reservation.id %}">
+            Check In
+        </div>
+
+        <div class="btn btn-danger"
+             hx-get="{% url 'main:locker_reservation_cancel' locker_reservation_id=locker_reservation.id %}">
+            Cancel Reservation
+        </div>
+    {% endif %}
+
+    {% if locker_reservation.actual.lower and not locker_reservation.actual.upper %}
+        <div class="btn btn-success"
+             hx-get="{% url 'main:locker_reservation_check_out' locker_reservation_id=locker_reservation.id %}">
+            Check Out
+        </div>
+    {% endif %}
+{% endblock %}
+
+
+
+
+
+{% block locker_reservation_cancelled %}
+    Reservation Cancelled as of: {{ locker_reservation.cancelled }}
+{% endblock %}
+
+
+
+
+
+{% block locker_reservations_greater_than_thirty_days %}
+    {% load static i18n %}
+
+    <h3>Reservations Greater than Thirty Days</h3>
+
+    <p class="pb-5">
+        Lists out reservations that have a <code>period</code> datetime range value with a duration grater than 30
+        days in length.
+    </p>
+
+    <table
+        id="table"
+        data-toggle="table"
+        data-height="460"
+        data-show-columns="true">
+        <thead>
+            <tr>
+                <th></th>
+                <th>Pool</th>
+                <th>Locker</th>
+                <th>Period</th>
+                <th>Length of Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for reservation in locker_reservations_greater_than_thirty_days %}
+                <tr data-index="{{ forloop.counter0 }}">
+                    <td class="p-1 pe-5">
+                        {{ forloop.counter0 }}
+                    </td>
+                    <td class="p-1 pe-3">
+                        {{ reservation.locker.pool }}
+                    </td>
+                    <td class="p-1 pe-3">
+                        {{ reservation.locker.number }}
+                    </td>
+                    <td class="p-1 pe-3">
+                        {{ reservation.period.lower }} -to- {{ reservation.period.upper }}
+                    </td>
+                    <td class="p-1 pe-3">
+                        {{ reservation.delta }}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% include "calendar.html" %}
+
+    <div class="m-3 mt-5">
+        <button class="btn btn-dark"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#collapseExample"
+                aria-expanded="false"
+                aria-controls="collapseExample">
+            Code Notes <i class="bi-lightbulb text-warning"></i>
+        </button>
+
+        <div class="collapse" id="collapseExample">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <p class="card-text">
+                        Here we use the <code class="language-python">__startswith</code> and
+                        <code class="language-python">__endswith</code> lookups along with
+                        <a href="https://docs.djangoproject.com/en/4.1/ref/models/expressions/#f-expressions"
+                           target="_blank"
+                           rel="noopener noreferrer">
+                            F Expressions
+                        </a>. We are subtracting the lower part of the range (the starting value) from the upper end
+                        of the range (the ending value) to annotate each instance in the QuerySet with the overall
+                        length of the range. We then use this annotation to filter out any reservations that are not
+                        greater than 30 days in length.
+                    </p>
+
+                    <p class="card-text"><u>views.py</u></p>
+
+                    <pre class="m-0"><code class="language-python">
+from django.db.models import DurationField, ExpressionWrapper, F
+
+locker_reservations_greater_than_thirty_days = (
+    LockerReservation.objects.all()
+    .annotate(
+        delta=ExpressionWrapper(
+            F("period__endswith") - F("period__startswith"),
+            output_field=DurationField(),
+        )
+    )
+    .filter(delta__gt=timezone.timedelta(days=30))
+)
+                    </code></pre>
+
+                    <p class="card-text">
+                        Then, in the table
+                    </p>
+
+                    <p class="card-text">Excerpt from <u>main/locker_reservation_partials.html</u></p>
+
+                    <pre class="m-0"><code class="language-html">
+{% verbatim %}{% for reservation in locker_reservations_greater_than_thirty_days %}
+    &lt;tr data-index=&quot;{{ forloop.counter0 }}&quot;&gt;
+        &lt;td class=&quot;p-1 pe-5&quot;&gt;
+            {{ forloop.counter0 }}
+        &lt;/td&gt;
+        &lt;td class=&quot;p-1 pe-3&quot;&gt;
+            {{ reservation.locker.pool }}
+        &lt;/td&gt;
+        &lt;td class=&quot;p-1 pe-3&quot;&gt;
+            {{ reservation.locker.number }}
+        &lt;/td&gt;
+        &lt;td class=&quot;p-1 pe-3&quot;&gt;
+            {{ reservation.period.lower }} -to- {{ reservation.period.upper }}
+        &lt;/td&gt;
+        &lt;td class=&quot;p-1 pe-3&quot;&gt;
+            {{ reservation.delta }}
+        &lt;/td&gt;
+    &lt;/tr&gt;
+{% endfor %}{% endverbatim %}
+                    </code></pre>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        hljs.highlightAll();
+    </script>
+{% endblock %}
+
+
+
+
+
+{% block locker_reservations_this_month %}
+    {% load static i18n %}
+
+    <h3>Reservations This Month</h3>
+
+    <p class="pb-5">
+    Lists reservations where the <code>period</code> datetime range value overlaps in any amount with the current month.
+    </p>
+
+    <div class="pagination mb-4">
+        <span class="step-links">
+            {% if locker_reservations_this_month_page.has_previous %}
+                <btn class="btn btn-secondary"
+                     hx-get="{% url 'main:locker_reservations_this_month' %}?page=1"
+                     hx-swap="innerHTML"
+                     hx-target="#toolTabContent">&laquo; first</btn>
+                <btn class="btn btn-secondary"
+                     hx-get="{% url 'main:locker_reservations_this_month' %}?page={{ locker_reservations_this_month_page.previous_page_number }}"
+                     hx-swap="innerHTML"
+                     hx-target="#toolTabContent">previous</btn>
+            {% else %}
+                <btn class="btn btn-light" disabled="true">&laquo; first</btn>
+                <btn class="btn btn-light" disabled="true">previous</btn>
+            {% endif %}
+
+            <span class="current m-2">
+                Page {{ locker_reservations_this_month_page.number }} of {{ locker_reservations_this_month_page.paginator.num_pages }}
+            </span>
+
+            {% if locker_reservations_this_month_page.has_next %}
+                <btn class="btn btn-secondary"
+                     hx-get="{% url 'main:locker_reservations_this_month' %}?page={{ locker_reservations_this_month_page.next_page_number }}"
+                     hx-swap="innerHTML"
+                     hx-target="#toolTabContent">next</btn>
+                <btn class="btn btn-secondary"
+                     hx-get="{% url 'main:locker_reservations_this_month' %}?page={{ locker_reservations_this_month_page.paginator.num_pages }}"
+                     hx-swap="innerHTML"
+                     hx-target="#toolTabContent">last &raquo;</btn>
+            {% else %}
+                <btn class="btn btn-light">next</btn>
+                <btn class="btn btn-light">last &raquo;</btn>
+            {% endif %}
+        </span>
+    </div>
+
+
+    <table
+        id="table"
+        data-toggle="table"
+        data-height="460"
+        data-show-columns="true">
+        <thead>
+            <tr>
+                <th>Pool</th>
+                <th>Locker</th>
+                <th>Period</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for reservation in locker_reservations_this_month_page %}
+                <tr data-index="{{ forloop.counter0 }}">
+                    <td class="p-1 pe-3">
+                        {{ reservation.locker.pool }}
+                    </td>
+                    <td class="p-1 pe-3">
+                        {{ reservation.locker.number }}
+                    </td>
+                    <td class="p-1 pe-3">
+                        {{ reservation.period.lower }} -to- {{ reservation.period.upper }}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% include "calendar.html" %}
+
+    <div class="m-3 mt-5">
+        <button class="btn btn-dark"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#collapseExample"
+                aria-expanded="false"
+                aria-controls="collapseExample">
+            Code Notes <i class="bi-lightbulb text-warning"></i>
+        </button>
+
+        <div class="collapse" id="collapseExample">
+            <div class="card bg-light">
+                <div class="card-body">
+
+                    <p class="card-text">
+                        We start with a helper function in <i>date_utils.py</i>, which returns a <code>DateTimeTZRange</code>
+                        with a range that covers the entire current month. <code>DateTimeTZRange</code> comes from
+                        <a href="https://www.psycopg.org/docs/extras.html#psycopg2.extras.DateTimeTZRange"
+                           target="_blank" rel="noopener noreferrer">psycopg2.extras</a>.
+                    </p>
+
+                    <p class="card-text"><u>date_utils.py</u></p>
+
+                    <pre class="m-0"><code class="language-python">
+from django.utils import timezone
+from dateutil.relativedelta import relativedelta
+from psycopg2.extras import DateTimeTZRange
+
+def get_month_range():
+    """
+    Return a DateTimeRange range covering the entirety of current month
+    """
+    today = timezone.now().date()
+    if today.day > 25:
+        today += timezone.timedelta(7)
+    this_month_start = today.replace(day=1)
+    next_month_start = this_month_start + relativedelta(months=1)
+    return DateTimeTZRange(this_month_start, next_month_start)
+                    </code></pre>
+
+                    <p class="card-text">
+                        Then we use the <code>__overlap</code> lookup to filter our QuerySet to include only Locker
+                        Reservation periods that overlap (any amount) with the current month.
+                    </p>
+
+                    <p class="card-text"><u>views.py</u></p>
+
+                    <pre class="m-0"><code class="language-python">
+locker_reservations_this_month = LockerReservation.objects.filter(period__overlap=get_month_range())
+                    </code></pre>
+
+                    <p class="card-text">
+                    Then, in the table (we are using pagination, so the <code>locker_reservations_this_month</code> variable
+                    was assigned to the pagination function).
+                    </p>
+
+                    <p class="card-text">Excerpt from <u>main/locker_reservation_partials.html</u></p>
+
+                    <pre class="m-0"><code class="language-html">
+{% verbatim %}{% for reservation in locker_reservations_this_month_page %}
+    &lt;tr data-index=&quot;{{ forloop.counter0 }}&quot;&gt;
+        &lt;td class=&quot;p-1 pe-3&quot;&gt;
+            {{ reservation.locker.pool }}
+        &lt;/td&gt;
+        &lt;td class=&quot;p-1 pe-3&quot;&gt;
+            {{ reservation.locker.number }}
+        &lt;/td&gt;
+        &lt;td class=&quot;p-1 pe-3&quot;&gt;
+            {{ reservation.period.lower }} -to- {{ reservation.period.upper }}
+        &lt;/td&gt;
+    &lt;/tr&gt;
+{% endfor %}{% endverbatim %}
+                    </code></pre>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        hljs.highlightAll();
+    </script>
+
+{% endblock %}
+
+
+
+
+{% block locker_reservations_in_the_past %}
+    {% load static i18n %}
+
+    <h3>Reservations in the Past</h3>
+
+    <p class="pb-5">
+    Lists out only those reservations which are completely in the past. That is, the Upper value of the <code>period</code>
+    datetime range value is less than <code>timezone.now()</code>.
+    </p>
+
+    <table
+        id="table"
+        data-toggle="table"
+        data-height="460"
+        data-show-columns="true">
+        <thead>
+            <tr>
+                <th></th>
+                <th>Pool</th>
+                <th>Locker</th>
+                <th>Period</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for reservation in locker_reservations_in_the_past %}
+                <tr data-index="{{ forloop.counter0 }}">
+                    <td class="p-1 pe-5">
+                        {{ forloop.counter0 }}
+                    </td>
+                    <td class="p-1 pe-3">
+                        {{ reservation.locker.pool }}
+                    </td>
+                    <td class="p-1 pe-3">
+                        {{ reservation.locker.number }}
+                    </td>
+                    <td class="p-1 pe-3">
+                        {{ reservation.period.lower }} -to- {{ reservation.period.upper }}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% include "calendar.html" %}
+
+    <div class="m-3 mt-5">
+        <button class="btn btn-dark"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#collapseExample"
+                aria-expanded="false"
+                aria-controls="collapseExample">
+            Code Notes <i class="bi-lightbulb text-warning"></i>
+        </button>
+
+        <div class="collapse" id="collapseExample">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <p class="card-text">
+                        Here we use the <code class="language-python">__endswith__lt</code> lookup to ensure the entire
+                        period for each filtered <code>LockerReservation</code> instance occurs prior to the current time
+                        (<code>timezone.now()</code>). We cannot use just the<code class="language-python">__lt</code>
+                        lookup, because the <code><</code> operator is not defined for <code>(range) < (element)</code>
+                        in Postgres.
+                    </p>
+
+                    <p class="card-text"><u>views.py</u></p>
+
+                    <pre class="m-0"><code class="language-python">
+locker_reservations_in_the_past = LockerReservation.objects.filter(period__endswith__lt=timezone.now())
+                    </code></pre>
+
+                    <p class="card-text">
+                        Then, in the table
+                    </p>
+
+                    <p class="card-text">Excerpt from <u>main/locker_reservation_partials.html</u></p>
+
+                    <pre class="m-0"><code class="language-html">
+{% verbatim %}{% for reservation in locker_reservations_in_the_past %}
+    &lt;tr data-index=&quot;{{ forloop.counter0 }}&quot;&gt;
+        &lt;td class=&quot;p-1 pe-5&quot;&gt;
+            {{ forloop.counter0 }}
+        &lt;/td&gt;
+        &lt;td class=&quot;p-1 pe-3&quot;&gt;
+            {{ reservation.locker.pool }}
+        &lt;/td&gt;
+        &lt;td class=&quot;p-1 pe-3&quot;&gt;
+            {{ reservation.locker.number }}
+        &lt;/td&gt;
+        &lt;td class=&quot;p-1 pe-3&quot;&gt;
+            {{ reservation.period.lower }} -to- {{ reservation.period.upper }}
+        &lt;/td&gt;
+    &lt;/tr&gt;
+{% endfor %}{% endverbatim %}
+                    </code></pre>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        hljs.highlightAll();
+    </script>
+
+{% endblock %}
+
+
+
+
+
+{% block locker_reservations_year_to_date %}
+    {% load static i18n %}
+
+    <h3>Reservations Year-to-Date</h3>
+
+    <p class="pb-5">
+        Lists those reservations which overlap with a range from the beginning of the year until this moment.
+    </p>
+
+    <table
+        id="table"
+        data-toggle="table"
+        data-height="460"
+        data-show-columns="true">
+        <thead>
+            <tr>
+                <th></th>
+                <th>Pool</th>
+                <th>Locker</th>
+                <th>Period</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for reservation in locker_reservations_year_to_date %}
+                <tr data-index="{{ forloop.counter0 }}">
+                    <td class="p-1 pe-5">
+                        {{ forloop.counter0 }}
+                    </td>
+                    <td class="p-1 pe-3">
+                        {{ reservation.locker.pool }}
+                    </td>
+                    <td class="p-1 pe-3">
+                        {{ reservation.locker.number }}
+                    </td>
+                    <td class="p-1 pe-3">
+                        {{ reservation.period.lower }} -to- {{ reservation.period.upper }}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% include "calendar.html" %}
+
+    <div class="m-3 mt-5">
+        <button class="btn btn-dark"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#collapseExample"
+                aria-expanded="false"
+                aria-controls="collapseExample">
+            Code Notes <i class="bi-lightbulb text-warning"></i>
+        </button>
+
+        <div class="collapse" id="collapseExample">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <p class="card-text">
+                        Here we use the <code class="language-python">overlap</code> lookup to ensure the filter
+                        <code>LockerReservation</code> instances to those that overlap a
+                        <code class="language-python">DateTimeTZRange</code> from the beginning of this year until
+                        <code class="language-python">timezone.now()</code>.
+                    </p>
+
+                    <p class="card-text"><u>views.py</u></p>
+
+                    <pre class="m-0"><code class="language-python">
+locker_reservations_year_to_date = LockerReservation.objects.filter(
+    period__overlap=DateTimeTZRange(get_start_datetime_of_this_year(), timezone.now())
+)
+                    </code></pre>
+
+                    <p class="card-text">
+                        Then, in the table
+                    </p>
+
+                    <p class="card-text">Excerpt from <u>main/locker_reservation_partials.html</u></p>
+
+                    <pre class="m-0"><code class="language-html">
+{% verbatim %}{% for reservation in locker_reservations_year_to_date %}
+    &lt;tr data-index=&quot;{{ forloop.counter0 }}&quot;&gt;
+        &lt;td class=&quot;p-1 pe-5&quot;&gt;
+            {{ forloop.counter0 }}
+        &lt;/td&gt;
+        &lt;td class=&quot;p-1 pe-3&quot;&gt;
+            {{ reservation.locker.pool }}
+        &lt;/td&gt;
+        &lt;td class=&quot;p-1 pe-3&quot;&gt;
+            {{ reservation.locker.number }}
+        &lt;/td&gt;
+        &lt;td class=&quot;p-1 pe-3&quot;&gt;
+            {{ reservation.period.lower }} -to- {{ reservation.period.upper }}
+        &lt;/td&gt;
+    &lt;/tr&gt;
+{% endfor %}{% endverbatim %}
+                    </code></pre>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        hljs.highlightAll();
+    </script>
+{% endblock %}
+
+
+
+
+
+{% block locker_reservations_til_end_of_year %}
+    {% load static i18n %}
+
+    <h3>Reservations Now til End of Year</h3>
+
+    <p class="pb-5">
+        Lists those reservations which overlap with a range from this moment to the beginning of next year (excluding
+        any portion of next year).
+    </p>
+
+    <table
+        id="table"
+        data-toggle="table"
+        data-height="460"
+        data-show-columns="true">
+        <thead>
+            <tr>
+                <th></th>
+                <th>Pool</th>
+                <th>Locker</th>
+                <th>Period</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for reservation in locker_reservations_til_end_of_year %}
+                <tr data-index="{{ forloop.counter0 }}">
+                    <td class="p-1 pe-5">
+                        {{ forloop.counter0 }}
+                    </td>
+                    <td class="p-1 pe-3">
+                        {{ reservation.locker.pool }}
+                    </td>
+                    <td class="p-1 pe-3">
+                        {{ reservation.locker.number }}
+                    </td>
+                    <td class="p-1 pe-3">
+                        {{ reservation.period.lower }} -to- {{ reservation.period.upper }}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% include "calendar.html" %}
+
+    <div class="m-3 mt-5">
+        <button class="btn btn-dark"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#collapseExample"
+                aria-expanded="false"
+                aria-controls="collapseExample">
+            Code Notes <i class="bi-lightbulb text-warning"></i>
+        </button>
+
+        <div class="collapse" id="collapseExample">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <p class="card-text">
+                        Here we use the <code class="language-python">overlap</code> lookup to ensure the filter
+                        <code>LockerReservation</code> instances to those that overlap a
+                        <code class="language-python">DateTimeTZRange</code> from
+                        <code class="language-python">timezone.now()</code> to beginning of next year (exclusive).
+                    </p>
+
+                    <p class="card-text"><u>views.py</u></p>
+
+                    <pre class="m-0"><code class="language-python">
+locker_reservations_til_end_of_year = LockerReservation.objects.filter(
+    period__overlap=DateTimeTZRange(timezone.now(), get_start_datetime_of_next_year())
+)
+                    </code></pre>
+
+                    <p class="card-text">
+                        Then, in the table
+                    </p>
+
+                    <p class="card-text">Excerpt from <u>main/locker_reservation_partials.html</u></p>
+
+                    <pre class="m-0"><code class="language-html">
+{% verbatim %}{% for reservation in locker_reservations_til_end_of_year %}
+    &lt;tr data-index=&quot;{{ forloop.counter0 }}&quot;&gt;
+        &lt;td class=&quot;p-1 pe-5&quot;&gt;
+            {{ forloop.counter0 }}
+        &lt;/td&gt;
+        &lt;td class=&quot;p-1 pe-3&quot;&gt;
+            {{ reservation.locker.pool }}
+        &lt;/td&gt;
+        &lt;td class=&quot;p-1 pe-3&quot;&gt;
+            {{ reservation.locker.number }}
+        &lt;/td&gt;
+        &lt;td class=&quot;p-1 pe-3&quot;&gt;
+            {{ reservation.period.lower }} -to- {{ reservation.period.upper }}
+        &lt;/td&gt;
+    &lt;/tr&gt;
+{% endfor %}{% endverbatim %}
+                    </code></pre>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        hljs.highlightAll();
+    </script>
+{% endblock %}
+
+
+
+
+
+{% block locker_reservations_oct_or_dec_this_year %}
+    {% load static i18n %}
+
+    <h3>Reservations that end in October or December of this year</h3>
+
+    <p class="pb-5">
+        Lists out only those reservations which have an <i>upper</i> value of <code>period</code> which occurs in October
+        or December of this year.
+    </p>
+
+    <table
+        id="table"
+        data-toggle="table"
+        data-height="460"
+        data-show-columns="true">
+        <thead>
+            <tr>
+                <th></th>
+                <th>Pool</th>
+                <th>Locker</th>
+                <th>Period</th>
+                <th>Actual</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for reservation in locker_reservations_oct_or_dec_this_year %}
+                <tr data-index="{{ forloop.counter0 }}">
+                    <td class="p-1 pe-5">
+                        {{ forloop.counter0 }}
+                    </td>
+                    <td class="p-1 pe-3">
+                        {{ reservation.locker.pool }}
+                    </td>
+                    <td class="p-1 pe-3">
+                        {{ reservation.locker.number }}
+                    </td>
+                    <td class="p-1 pe-3">
+                        {{ reservation.period.lower }} -to- {{ reservation.period.upper }}
+                    </td>
+                    <td class="p-1 pe-3">
+                        {{ reservation.actual.lower }} -to- {{ reservation.actual.upper }}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% include "calendar.html" %}
+
+    <div class="m-3 mt-5">
+        <button class="btn btn-dark"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#collapseExample"
+                aria-expanded="false"
+                aria-controls="collapseExample">
+            Code Notes <i class="bi-lightbulb text-warning"></i>
+        </button>
+
+        <div class="collapse" id="collapseExample">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <p class="card-text">
+                        Here we use the <code class="language-python">endswith</code> lookup in two different ways. Once
+                        along with the <code class="language-python">month</code> and
+                        <code class="language-python">in</code> to limit results to those reservations where the upper
+                        value's month integer value matches with at least one of those in the provided list
+                        (<code>[10, 12]</code> for month 10 [October] and 12 [December]). The second time, we filter
+                        using the <code class="language-python">year</code> lookup to limit results to the current year.
+                        Refer to <a href="https://docs.djangoproject.com/en/4.1/ref/models/querysets/"
+                           target="_blank"
+                           rel="noopener noreferrer">
+                            Django's docs
+                        </a> for more details on these lookups.
+                    </p>
+
+                    <p class="card-text"><u>views.py</u></p>
+
+                    <pre class="m-0"><code class="language-python">
+locker_reservations_oct_or_dec_this_year = LockerReservation.objects.filter(
+    period__endswith__month__in=[10, 12], period__endswith__year=timezone.now().year
+)
+                    </code></pre>
+
+                    <p class="card-text">
+                        Then, in the table
+                    </p>
+
+                    <p class="card-text">Excerpt from <u>main/locker_reservation_partials.html</u></p>
+
+                    <pre class="m-0"><code class="language-html">
+{% verbatim %}{% for reservation in locker_reservations_in_the_past %}
+    &lt;tr data-index=&quot;{{ forloop.counter0 }}&quot;&gt;
+        &lt;td class=&quot;p-1 pe-5&quot;&gt;
+            {{ forloop.counter0 }}
+        &lt;/td&gt;
+        &lt;td class=&quot;p-1 pe-3&quot;&gt;
+            {{ reservation.locker.pool }}
+        &lt;/td&gt;
+        &lt;td class=&quot;p-1 pe-3&quot;&gt;
+            {{ reservation.locker.number }}
+        &lt;/td&gt;
+        &lt;td class=&quot;p-1 pe-3&quot;&gt;
+            {{ reservation.period.lower }} -to- {{ reservation.period.upper }}
+        &lt;/td&gt;
+    &lt;/tr&gt;
+{% endfor %}{% endverbatim %}
+                    </code></pre>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        hljs.highlightAll();
+    </script>
+{% endblock %}
+
+
+
+
+
+
+{% block locker_reservations_overdue_start %}
+    {% load static i18n %}
+
+    <h3>Reservations with Overdue Start</h3>
+
+    <p class="pb-5">
+        Lists out only those reservations where the <i>lower</i> value of the <code>period</code> field is less than
+        <code>timezone.now()</code>, but the <i>lower</i> value of the <code>actual</code> field is <code>None</code>,
+        meaning that the starting datetime for the reservation has already passed, but the user has not checked in.
+    </p>
+
+    <table
+        id="table"
+        data-toggle="table"
+        data-height="460"
+        data-show-columns="true">
+        <thead>
+            <tr>
+                <th></th>
+                <th>Pool</th>
+                <th>Locker</th>
+                <th>Period</th>
+                <th>Actual</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for reservation in locker_reservations_overdue_start %}
+                <tr data-index="{{ forloop.counter0 }}">
+                    <td class="p-1 pe-5">
+                        {{ forloop.counter0 }}
+                    </td>
+                    <td class="p-1 pe-3">
+                        {{ reservation.locker.pool }}
+                    </td>
+                    <td class="p-1 pe-3">
+                        {{ reservation.locker.number }}
+                    </td>
+                    <td class="p-1 pe-3">
+                        {{ reservation.period.lower }} -to- {{ reservation.period.upper }}
+                    </td>
+                    <td class="p-1 pe-3">
+                        {{ reservation.actual.lower }} -to- {{ reservation.actual.upper }}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% include "calendar.html" %}
+
+    <div class="m-3 mt-5">
+        <button class="btn btn-dark"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#collapseExample"
+                aria-expanded="false"
+                aria-controls="collapseExample">
+            Code Notes <i class="bi-lightbulb text-warning"></i>
+        </button>
+
+        <div class="collapse" id="collapseExample">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <p class="card-text">
+                        Here we use the <code class="language-python">startswith</code> lookup with both
+                        <code>period</code> and <code>actual</code> to find LockerReservation instances where the
+                        reservation should have already started, but the <code>actual</code> usage has not begun
+                        (the User has not checked in).
+                    </p>
+
+                    <p class="card-text"><u>views.py</u></p>
+
+                    <pre class="m-0"><code class="language-python">
+now = timezone.now()
+
+locker_reservations_overdue_start = LockerReservation.objects.filter(
+    period__startswith__lt=now, actual__startswith__isnull=True
+)
+                    </code></pre>
+
+                    <p class="card-text">
+                        Then, in the table
+                    </p>
+
+                    <p class="card-text">Excerpt from <u>main/locker_reservation_partials.html</u></p>
+
+                    <pre class="m-0"><code class="language-html">
+{% verbatim %}{% for reservation in locker_reservations_in_the_past %}
+    &lt;tr data-index=&quot;{{ forloop.counter0 }}&quot;&gt;
+        &lt;td class=&quot;p-1 pe-5&quot;&gt;
+            {{ forloop.counter0 }}
+        &lt;/td&gt;
+        &lt;td class=&quot;p-1 pe-3&quot;&gt;
+            {{ reservation.locker.pool }}
+        &lt;/td&gt;
+        &lt;td class=&quot;p-1 pe-3&quot;&gt;
+            {{ reservation.locker.number }}
+        &lt;/td&gt;
+        &lt;td class=&quot;p-1 pe-3&quot;&gt;
+            {{ reservation.period.lower }} -to- {{ reservation.period.upper }}
+        &lt;/td&gt;
+    &lt;/tr&gt;
+{% endfor %}{% endverbatim %}
+                    </code></pre>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        hljs.highlightAll();
+    </script>
+{% endblock %}
+
+
+
+
+{% block locker_reservations_overdue_end %}
+    {% load static i18n %}
+
+    <h3>Reservations with Overdue End</h3>
+
+    <p class="pb-5">
+    Lists out only those reservations where the <i>upper</i> value of the <code>period</code> field is less than
+        <code>timezone.now()</code>, but the <i>upper</i> value of the <code>actual</code> field is <code>None</code>,
+        meaning that the ending datetime for the reservation has already passed, but the user has not checked out.
+    </p>
+
+    <table
+        id="table"
+        data-toggle="table"
+        data-height="460"
+        data-show-columns="true">
+        <thead>
+            <tr>
+                <th></th>
+                <th>Pool</th>
+                <th>Locker</th>
+                <th>Period</th>
+                <th>Actual</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for reservation in locker_reservations_overdue_end %}
+                <tr data-index="{{ forloop.counter0 }}">
+                    <td class="p-1 pe-5">
+                        {{ forloop.counter0 }}
+                    </td>
+                    <td class="p-1 pe-3">
+                        {{ reservation.locker.pool }}
+                    </td>
+                    <td class="p-1 pe-3">
+                        {{ reservation.locker.number }}
+                    </td>
+                    <td class="p-1 pe-3">
+                        {{ reservation.period.lower }} -to- {{ reservation.period.upper }}
+                    </td>
+                    <td class="p-1 pe-3">
+                        {{ reservation.actual.lower }} -to- {{ reservation.actual.upper }}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% include "calendar.html" %}
+
+    <div class="m-3 mt-5">
+        <button class="btn btn-dark"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#collapseExample"
+                aria-expanded="false"
+                aria-controls="collapseExample">
+            Code Notes <i class="bi-lightbulb text-warning"></i>
+        </button>
+
+        <div class="collapse" id="collapseExample">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <p class="card-text">
+                        Here we use the <code class="language-python">endswith</code> lookup with both
+                        <code>period</code> and <code>actual</code> to find LockerReservation instances where the
+                        reservation should have already ended, but the <code>actual</code> usage has not finished
+                        (the User has not checked out).
+                    </p>
+
+                    <p class="card-text"><u>views.py</u></p>
+
+                    <pre class="m-0"><code class="language-python">
+now = timezone.now()
+
+locker_reservations_overdue_end = LockerReservation.objects.filter(
+    period__endswith__lt=now, actual__endswith__isnull=True
+)
+                    </code></pre>
+
+                    <p class="card-text">
+                        Then, in the table
+                    </p>
+
+                    <p class="card-text">Excerpt from <u>main/locker_reservation_partials.html</u></p>
+
+                    <pre class="m-0"><code class="language-html">
+{% verbatim %}{% for reservation in locker_reservations_in_the_past %}
+    &lt;tr data-index=&quot;{{ forloop.counter0 }}&quot;&gt;
+        &lt;td class=&quot;p-1 pe-5&quot;&gt;
+            {{ forloop.counter0 }}
+        &lt;/td&gt;
+        &lt;td class=&quot;p-1 pe-3&quot;&gt;
+            {{ reservation.locker.pool }}
+        &lt;/td&gt;
+        &lt;td class=&quot;p-1 pe-3&quot;&gt;
+            {{ reservation.locker.number }}
+        &lt;/td&gt;
+        &lt;td class=&quot;p-1 pe-3&quot;&gt;
+            {{ reservation.period.lower }} -to- {{ reservation.period.upper }}
+        &lt;/td&gt;
+    &lt;/tr&gt;
+{% endfor %}{% endverbatim %}
+                    </code></pre>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        hljs.highlightAll();
+    </script>
+{% endblock %}
+
+
+
+
+
+
+{% block locker_reservations_contains_date %}
+    {% load static i18n %}
+    {% load crispy_forms_tags %}
+
+    <h3>Reservations Overlapping a Date</h3>
+    <h4>using a manually-rendered input tag, htmx, and bootstrap-daterangepicker</h4>
+
+    <p class="pb-5">
+        This examples uses a manually-rendered <code>&lt;input&gt;</code> tag and an attached daterange picker
+        (<a href="https://www.daterangepicker.com/"
+            target="_blank"
+            rel="noopener noreferrer">bootstrap-daterangepicker</a>), set to work with a single date,
+        and return LockerReservation instances that contain the date.
+    </p>
+
+    <div id="div_id_datetimerange_input" class="control-group">
+        <label for="id_datetimerange_input" class="control-label requiredField">
+                Date to Filter<span class="asteriskField">*</span>
+        </label>
+        <div class="controls">
+            <input type="text"
+                   name="date_input"
+                   class="datetime_rangepicker textinput textInput"
+                   hx-post="{% url 'main:locker_reservations_overlapping_date' %}"
+                   hx-target="#outputDiv"
+                   hx-trigger="range_change"
+                   onchange="htmx.trigger(this, 'range_change')">
+        </div>
+    </div>
+
+    <div id="outputDiv"></div>
+
+    <script>
+        $(function() {
+            $('.datetime_rangepicker').daterangepicker({
+                singleDatePicker: true,
+                autoApply: true,
+                maxYear: parseInt(moment().format('YYYY'), 10),
+                locale: {
+                    format: "MM/DD/YYYY"
+                }
+            });
+        });
+    </script>
+
+{% endblock %}
+
+
+
+
+
+{% block locker_reservations_contains_date_inner_content %}
+    {% load static i18n %}
+
+    {% if locker_reservations_filtered %}
+        <table
+            id="table"
+            data-toggle="table"
+            data-height="460"
+            data-show-columns="true">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Pool</th>
+                    <th>Locker</th>
+                    <th>Period</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for reservation in locker_reservations_filtered %}
+                    <tr data-index="{{ forloop.counter0 }}">
+                        <td class="p-1 pe-5">
+                            {{ forloop.counter0 }}
+                        </td>
+                        <td class="p-1 pe-3">
+                            {{ reservation.locker.pool }}
+                        </td>
+                        <td class="p-1 pe-3">
+                            {{ reservation.locker.number }}
+                        </td>
+                        <td class="p-1 pe-3">
+                            {{ reservation.period.lower }} -to- {{ reservation.period.upper }}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        No results.
+    {% endif %}
+
+    {% include "calendar.html" %}
+
+    <div class="m-3 mt-5">
+        <button class="btn btn-dark"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#collapseExample"
+                aria-expanded="false"
+                aria-controls="collapseExample">
+            Code Notes <i class="bi-lightbulb text-warning"></i>
+        </button>
+
+        <div class="collapse" id="collapseExample">
+            <div class="card bg-light">
+                <div class="card-body">
+
+                    <p class="card-text">
+                        This examples uses a manually-rendered <code>&lt;input&gt;</code> tag and an attached daterange picker
+                        (<a href="https://www.daterangepicker.com/"
+                            target="_blank"
+                            rel="noopener noreferrer">bootstrap-daterangepicker</a>) configured to return a single date
+                        from the user, and return LockerReservation instances that contain the date.
+                    </p>
+
+                    <p class="card-text">
+                        In the view, a GET request will return the partial template with the manually-rendered input
+                        and an empty #outputDiv div tag. On POST, we filter the QuerySet to only those LockerReservation
+                        instances which overlap with the datetime range from user input.
+                    </p>
+
+                    <pre class="m-0"><code class="language-python">
+def locker_reservations_contains_date_partial_view(request):
+    template = "main/locker_reservation_partials.html"
+    context = {}
+
+    if request.method == "POST":
+        raw_string_list = request.POST.get("date_input", "")
+        # ToDo: Input validation is important, but skipped here to keep concise
+        date_input = get_date_from_string(raw_string_list)
+
+        locker_reservations_filtered = LockerReservation.objects.filter(period__contains=date_input)
+
+        context["locker_reservations_filtered"] = locker_reservations_filtered
+
+        context = {**context, **get_locker_reservation_calendar_context(locker_reservations_filtered)}
+        html = render_block_to_string(template, "locker_reservations_contains_date_inner_content", context)
+        return HttpResponse(html)
+
+    html = render_block_to_string(template, "locker_reservations_contains_date", context)
+    return HttpResponse(html)
+                    </code></pre>
+
+                    <p class="card-text">
+                        The template for a GET request includes the manually-rendered input tag, the empty
+                        #outputDiv tag, and a chunk of jQuery to attach the bootstrap-daterangepicker to the input.
+                    </p>
+
+                    <pre class="m-0"><code class="language-django">
+{% verbatim %}&lt;div id=&quot;div_id_datetimerange_input&quot; class=&quot;control-group&quot;&gt;
+    &lt;label for=&quot;id_datetimerange_input&quot; class=&quot;control-label requiredField&quot;&gt;
+            Date to Filter&lt;span class=&quot;asteriskField&quot;&gt;*&lt;/span&gt;
+    &lt;/label&gt;
+    &lt;div class=&quot;controls&quot;&gt;
+        &lt;input type=&quot;text&quot;
+               name=&quot;date_input&quot;
+               class=&quot;datetime_rangepicker textinput textInput&quot;
+               hx-post=&quot;{% url 'main:locker_reservations_overlapping_date' %}&quot;
+               hx-target=&quot;#outputDiv&quot;
+               hx-trigger=&quot;range_change&quot;
+               onchange=&quot;htmx.trigger(this, 'range_change')&quot;&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;div id=&quot;outputDiv&quot;&gt;&lt;/div&gt;
+
+&lt;script&gt;
+    $(function() {
+        $('.datetime_rangepicker').daterangepicker({
+            singleDatePicker: true,
+            autoApply: true,
+            maxYear: parseInt(moment().format('YYYY'), 10),
+            locale: {
+                format: &quot;MM/DD/YYYY&quot;
+            }
+        });
+    });
+&lt;/script&gt;{% endverbatim %}
+                    </code></pre>
+
+                    <p class="card-text">
+                        As in other examples, we then place the filtered results into a table and a calendar for output
+                        to the user.
+                    </p>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        hljs.highlightAll();
+    </script>
+{% endblock %}
+
+
+
+
+
+
+{% block locker_reservations_overlapping_datetime_form %}
+    {% load static i18n %}
+    {% load crispy_forms_tags %}
+
+    <h3>Reservations Overlapping a DateTime range</h3>
+    <h4>using Django Forms, htmx, and bootstrap-daterangepicker</h4>
+
+    <p class="pb-5">
+        This examples uses Django's forms with a CharField and an attached daterange picker
+        (<a href="https://www.daterangepicker.com/" target="_blank" rel="noopener noreferrer">
+        bootstrap-daterangepicker</a>) to get a daterange from the user,
+        and return LockerReservation instances that overlap. Django does have a <code>DateTimeRangeField</code> form
+        field, which is used for these ranges in Admin, but I find it less useful than working with CharField and
+        converting the input using the <code>clean_</code><i><code>fieldname</code></i> method. See other example
+        with this field.
+    </p>
+
+    {% crispy form %}
+
+    <div id="outputDiv"></div>
+
+    <script>
+        $(function() {
+            $('.datetime_rangepicker').daterangepicker({
+                timePicker: true,
+                timePickerIncrement: 15,
+                timePicker24Hour: true,
+                maxYear: parseInt(moment().format('YYYY'), 10),
+                locale: {
+                    format: "MM/DD/YYYY (HH:mm)"
+                }
+            });
+        });
+    </script>
+
+{% endblock %}
+
+
+
+
+
+
+{% block locker_reservations_overlapping_datetime_rangefield_form %}
+    {% load static i18n %}
+    {% load crispy_forms_tags %}
+
+    <h3>Reservations Overlapping a DateTime range</h3>
+    <h4>using Django Forms, htmx, and bootstrap-daterangepicker</h4>
+
+    <p class="pb-5">
+        This examples uses Django's forms with a DateTimeRangeField and two attached daterange pickers
+        (<a href="https://www.daterangepicker.com/" target="_blank" rel="noopener noreferrer">
+        bootstrap-daterangepicker</a>) limited to single datetimes to get a daterange from the user,
+        and return LockerReservation instances that overlap.
+    </p>
+
+    <form hx-post="{% url 'main:locker_reservations_overlapping_datetime_rangefield_form' %}"
+          hx-trigger="submit"
+          hx-target="#outputDiv">
+        {{ form|crispy }}
+        <input type="submit">
+    </form>
+
+
+    <div id="outputDiv"></div>
+
+    <script>
+        $(function() {
+            $('.datetimeinput').daterangepicker({
+                singleDatePicker: true,
+                timePicker: true,
+                timePickerIncrement: 15,
+                timePicker24Hour: true,
+                maxYear: parseInt(moment().format('YYYY'), 10),
+                locale: {
+                    format: "YYYY-MM-DD HH:mm:ss"
+                }
+            });
+        });
+    </script>
+
+{% endblock %}
+
+
+
+
+
+
+{% block locker_reservations_overlapping_datetime_manual %}
+    {% load static i18n %}
+    {% load crispy_forms_tags %}
+
+    <h3>Reservations Overlapping a DateTime range</h3>
+    <h4>using a manually-rendered input tag, htmx, and bootstrap-daterangepicker</h4>
+
+    <p class="pb-5">
+        This examples uses a manually-rendered <code>&lt;input&gt;</code> tag and an attached daterange picker
+        (<a href="https://www.daterangepicker.com/"
+            target="_blank"
+            rel="noopener noreferrer">bootstrap-daterangepicker</a>)
+        to get a daterange from the user, and return LockerReservation instances that overlap.
+    </p>
+
+    <div id="div_id_datetimerange_input" class="control-group">
+        <label for="id_datetimerange_input" class="control-label requiredField">
+                DateTime Range to Filter<span class="asteriskField">*</span>
+        </label>
+        <div class="controls">
+            <input type="text"
+           name="datetimerange_input"
+           class="datetime_rangepicker textinput textInput"
+           hx-post="{% url 'main:locker_reservations_overlapping_datetime_manual' %}"
+           hx-target="#outputDiv"
+           hx-trigger="range_change"
+           onchange="htmx.trigger(this, 'range_change')">
+        </div>
+    </div>
+
+
+
+    <div id="outputDiv"></div>
+
+    <script>
+        $(function() {
+            $('.datetime_rangepicker').daterangepicker({
+                timePicker: true,
+                timePickerIncrement: 15,
+                timePicker24Hour: true,
+                maxYear: parseInt(moment().format('YYYY'), 10),
+                locale: {
+                    format: "MM/DD/YYYY (HH:mm)"
+                }
+            });
+        });
+    </script>
+
+{% endblock %}
+
+
+
+
+
+{% block locker_reservations_overlapping_datetime_inner_content %}
+    {% load static i18n %}
+
+    {% if locker_reservations_filtered %}
+        <table
+            id="table"
+            data-toggle="table"
+            data-height="460"
+            data-show-columns="true">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Pool</th>
+                    <th>Locker</th>
+                    <th>Period</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for reservation in locker_reservations_filtered %}
+                    <tr data-index="{{ forloop.counter0 }}">
+                        <td class="p-1 pe-5">
+                            {{ forloop.counter0 }}
+                        </td>
+                        <td class="p-1 pe-3">
+                            {{ reservation.locker.pool }}
+                        </td>
+                        <td class="p-1 pe-3">
+                            {{ reservation.locker.number }}
+                        </td>
+                        <td class="p-1 pe-3">
+                            {{ reservation.period.lower }} -to- {{ reservation.period.upper }}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        No results.
+    {% endif %}
+
+    {% include "calendar.html" %}
+
+    <div class="m-3 mt-5">
+        <button class="btn btn-dark"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#collapseExample"
+                aria-expanded="false"
+                aria-controls="collapseExample">
+            Code Notes <i class="bi-lightbulb text-warning"></i>
+        </button>
+
+        <div class="collapse" id="collapseExample">
+            <div class="card bg-light">
+                <div class="card-body">
+
+                    <h3>Django Forms version:</h3>
+
+                    <p class="card-text">
+                        Here, we create a form with a single CharField and do the following:
+                    </p>
+
+                    <p class="card-text">
+                        <ul>
+                            <li>add the datetime_rangepicker class, which we will use in the template to attach the
+                                daterangepicker</li>
+                            <li>add some <a href="https://htmx.org/" target="_blank" rel="noopener noreferrer">htmx</a>
+                                attributes which will post the input to the correct url when the onchange event fires,
+                                and place the response into <code>#outputDiv</code></li>
+                            <li>clean the resulting field data by converting the string to a psycopg2.extras
+                                DateTimeTZRange, which can be used in our QuerySet to filter results</li>
+                        </ul>
+                    </p>
+
+                    <pre class="m-0"><code class="language-python">
+class ReservationsOverlappingDateTimeForm(forms.Form):
+    datetimerange_input = forms.CharField(
+        label="DateTime Range to Filter",
+        widget=forms.TextInput(
+            attrs={
+                "class": "datetime_rangepicker",
+                "hx-post": reverse_lazy("main:locker_reservations_overlapping_datetime_form"),
+                "hx-target": "#outputDiv",
+                "hx-trigger": "range_change",
+                "onchange": "htmx.trigger(this, 'range_change')",
+            }
+        ),
+    )
+
+    def clean_datetimerange_input(self):
+        raw_string_list = self.cleaned_data["datetimerange_input"].split(" - ", 1)
+        if len(raw_string_list) != 2:
+            raise ValidationError("Incorrect datetime range input!")
+
+        try:
+            data = get_datetime_from_string_list(raw_string_list)
+        except ValueError as e:
+            raise ValidationError(e)
+
+        return data
+                    </code></pre>
+
+                    <p class="card-text">
+                        In the view, a GET request will return the form and an empty #outputDiv div tag. On POST,
+                        we filter the QuerySet to only those LockerReservation instances which overlap with the datetime
+                        range from user input.
+                    </p>
+
+                    <pre class="m-0"><code class="language-python">
+def locker_reservations_overlapping_datetime_form_partial_view(request):
+    template = "main/locker_reservation_partials.html"
+    context = {}
+
+    form = ReservationsOverlappingDateTimeForm(request.POST or None)
+    context["form"] = form
+
+    if request.method == "POST":
+        if form.is_valid():
+            input_range = form.cleaned_data["datetimerange_input"]
+            locker_reservations_filtered = LockerReservation.objects.filter(period__overlap=input_range)
+
+            context["locker_reservations_filtered"] = locker_reservations_filtered
+
+            context = {**context, **get_locker_reservation_calendar_context(locker_reservations_filtered)}
+            html = render_block_to_string(template, "locker_reservations_overlapping_datetime_inner_content", context)
+            return HttpResponse(html)
+
+    html = render_block_to_string(template, "locker_reservations_overlapping_datetime_form", context)
+    return HttpResponse(html)
+                    </code></pre>
+
+                    <p class="card-text">
+                        The template for a GET request includes the form (using
+                        <a href="https://django-crispy-forms.readthedocs.io/en/latest/"
+                           target="_blank"
+                           rel="noopener noreferrer">crispy forms</a>
+                        here to make it look nice), the empty #outputDiv tag, and a chunk of jQuery to attach the
+                        bootstrap-daterangepicker to the form's CharField input.
+                    </p>
+
+                    <pre class="m-0"><code class="language-django">
+{% verbatim %}{% crispy form %}
+
+&lt;div id=&quot;outputDiv&quot;&gt;&lt;/div&gt;
+
+&lt;script&gt;
+    $(function() {
+        $('.datetime_rangepicker').daterangepicker({
+            timePicker: true,
+            timePickerIncrement: 15,
+            timePicker24Hour: true,
+            maxYear: parseInt(moment().format('YYYY'), 10),
+            locale: {
+                format: &quot;MM/DD/YYYY (HH:mm)&quot;
+            }
+        });
+    });
+&lt;/script&gt;{% endverbatim %}
+                    </code></pre>
+
+                    <p class="card-text">
+                        As in other examples, we then place the filtered results into a table and a calendar for output
+                        to the user.
+                    </p>
+
+                    <p></p>
+
+                    <h3>Manually-rendered input tag with htmx version:</h3>
+
+                    <p class="card-text">
+                        Here, within the template, we manually add an input tag with htmx attributes which will post the
+                        input to the correct url when the onchange event fires, and place the response into #outputDiv.
+                    </p>
+
+                    <p class="card-text">
+                        In the view, a GET request will return the partial template with the manually-rendered input
+                        and an empty #outputDiv div tag. On POST, we filter the QuerySet to only those LockerReservation
+                        instances which overlap with the datetime range from user input.
+                    </p>
+
+                    <pre class="m-0"><code class="language-python">
+def locker_reservations_overlapping_datetime_form_partial_view(request):
+    template = "main/locker_reservation_partials.html"
+    context = {}
+
+    form = ReservationsOverlappingDateTimeForm(request.POST or None)
+    form.fields["datetimerange_input"].widget.attrs["hx-post"] = reverse_lazy(
+        "main:locker_reservations_overlapping_datetime_form"
+    )
+    context["form"] = form
+
+    if request.method == "POST":
+        if form.is_valid():
+            input_range = form.cleaned_data["datetimerange_input"]
+            locker_reservations_filtered = LockerReservation.objects.filter(period__overlap=input_range)
+
+            context["locker_reservations_filtered"] = locker_reservations_filtered
+
+            context = {**context, **get_locker_reservation_calendar_context(locker_reservations_filtered)}
+            html = render_block_to_string(template, "locker_reservations_overlapping_datetime_inner_content", context)
+            return HttpResponse(html)
+
+    html = render_block_to_string(template, "locker_reservations_overlapping_datetime_form", context)
+    return HttpResponse(html)
+                    </code></pre>
+
+                    <p class="card-text">
+                        The template for a GET request includes the manually-rendered input tag, the empty
+                        #outputDiv tag, and a chunk of jQuery to attach the bootstrap-daterangepicker to the
+                        form's CharField input.
+                    </p>
+
+                    <pre class="m-0"><code class="language-django">
+{% verbatim %}&lt;div id=&quot;div_id_datetimerange_input&quot; class=&quot;control-group&quot;&gt;
+    &lt;label for=&quot;id_datetimerange_input&quot; class=&quot;control-label requiredField&quot;&gt;
+            DateTime Range to Filter&lt;span class=&quot;asteriskField&quot;&gt;*&lt;/span&gt;
+    &lt;/label&gt;
+    &lt;div class=&quot;controls&quot;&gt;
+        &lt;input type=&quot;text&quot;
+       name=&quot;datetimerange_input&quot;
+       class=&quot;datetime_rangepicker textinput textInput&quot;
+       hx-post=&quot;{% url 'main:locker_reservations_overlapping_datetime_manual' %}&quot;
+       hx-target=&quot;#outputDiv&quot;
+       hx-trigger=&quot;range_change&quot;
+       onchange=&quot;htmx.trigger(this, 'range_change')&quot;&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;div id=&quot;outputDiv&quot;&gt;&lt;/div&gt;
+
+&lt;script&gt;
+    $(function() {
+        $('.datetime_rangepicker').daterangepicker({
+            timePicker: true,
+            timePickerIncrement: 15,
+            timePicker24Hour: true,
+            maxYear: parseInt(moment().format('YYYY'), 10),
+            locale: {
+                format: &quot;MM/DD/YYYY (HH:mm)&quot;
+            }
+        });
+    });
+&lt;/script&gt;{% endverbatim %}
+                    </code></pre>
+
+                    <p class="card-text">
+                        As in other examples, we then place the filtered results into a table and a calendar for output
+                        to the user.
+                    </p>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        hljs.highlightAll();
+    </script>
+{% endblock %}
+
+
+
+
+
+
+{% block locker_reservations_average_length_of_all %}
+    {% load static i18n %}
+
+    <h3>Average Duration of All Reservations</h3>
+
+    <div class="pb-5">
+    Aggregates the average durations of all LockerRental <code>period</code> durations.
+    </div>
+
+    <div class="m-3">
+        Average: {{ locker_reservations_average_length_of_all }}
+    </div>
+
+    <div class="m-3 mt-5">
+        <button class="btn btn-dark"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#collapseExample"
+                aria-expanded="false"
+                aria-controls="collapseExample">
+            Code Notes <i class="bi-lightbulb text-warning"></i>
+        </button>
+
+        <div class="collapse" id="collapseExample">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <p class="card-text">
+                        We annotate each <code class="language-python">Locker</code> in the QuerySet with the duration of
+                        <code>period</code>, by subtracting the lower value of the DateTimeRangeField from the upper value,
+                        and then apply a <code>Sum</code> aggregation on that new annotation. Finally, we display the string
+                        representation of the resulting annotation.
+                    </p>
+
+                    <p class="card-text"><u>views.py</u></p>
+
+                    <pre class="m-0"><code class="language-python">
+locker_reservations_average_length_of_all = LockerReservation.objects.annotate(
+    time_elapsed=Sum(Cast(F("period__endswith") - F("period__startswith"), DurationField()))
+).aggregate(time_elapsed_avg=Avg("time_elapsed"))
+
+context["locker_reservations_average_length_of_all"] = str(
+    locker_reservations_average_length_of_all["time_elapsed_avg"]
+)
+                    </code></pre>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        hljs.highlightAll();
+    </script>
+{% endblock %}
+
+
+
+
+{% block abc05 %}
+
+
+{% endblock %}
+
+
+
+
+{% block abc06 %}
+
+
+{% endblock %}
+
+
+
+
+{% block abc07 %}
+
+
+{% endblock %}
+
+
+
+
+{% block abc08 %}
+
+
+{% endblock %}
+

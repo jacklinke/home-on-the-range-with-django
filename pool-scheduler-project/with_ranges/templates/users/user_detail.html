@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% load static i18n %}
+
+{% block content_title %}User Details: <i>{{ user.email }}</i>{% endblock content_title %}
+
+
+{% block content %}
+
+    Email: {{ user.email }}<br>
+    Name: {{ user.first_name }} {{ user.last_name }}<br>
+    Is Staff: {{ user.is_staff }}<br>
+    Is Active: {{ user.is_active }}<br>
+    Date Joined: {{ user.date_joined }}<br>
+
+    <hr>
+
+    Total Lane Reservations: {{ lane_reservations_count }}<br>
+    Total Locker Reservations: {{ locker_reservations_count }}<br>
+
+{% endblock content %}

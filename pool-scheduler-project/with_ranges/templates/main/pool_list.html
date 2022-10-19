@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% load static i18n %}
+
+{% block content_title %}Pools{% endblock content_title %}
+
+
+{% block content %}
+    <p>
+    List of Pools:
+    </p>
+
+    <table
+        id="table"
+        data-toggle="table"
+        data-height="460"
+        data-show-columns="true">
+        <thead>
+            <tr>
+                <th data-field="name">Name</th>
+                <th data-field="price">Business Hours</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for pool in pools.all %}
+                <tr data-index="{{ forloop.counter0 }}">
+                    <td class="p-1">
+                        <a href="{% url 'main:pool_detail_view' pool_id=pool.id %}">{{ pool.name }}</a>
+                    </td>
+                    <td class="p-1">
+                        <b>{{ pool.business_hours.lower|stringformat:"02d" }}00</b> to <b>{{ pool.business_hours.upper|stringformat:"02d" }}00</b>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+
+
+    <div class="m-3 mt-5">
+        <button class="btn btn-dark" type="button" data-bs-toggle="collapse" data-bs-target="#collapseExample" aria-expanded="false" aria-controls="collapseExample">
+            Code Notes <i class="bi-lightbulb text-warning"></i>
+        </button>
+        <div class="collapse" id="collapseExample">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <p class="card-text">The default display for a range is not very pretty for use in a template.</p>
+                    <pre class="m-0"><code class="language-django">
+{% verbatim %}&lt;b&gt;{{ pool.business_hours }}&lt;/b&gt;{% endverbatim %}
+                        </code></pre>
+                    <i>Result: <b>[6, 16)</b></i>
+
+                    <p></p>
+
+                    <p class="card-text">In order to print out the business hours nicely, we can use the `range.lower` and range.upper`</p>
+                    <pre class="m-0"><code class="language-django">
+{% verbatim %}&lt;b&gt;{{ pool.business_hours.lower }}&lt;/b&gt; to &lt;b&gt;{{ pool.business_hours.upper }}&lt;/b&gt;{% endverbatim %}
+                    </code></pre>
+                    <i>Result: <b>6</b> to <b>16</b></i>
+
+                    <p></p>
+
+                    <p class="card-text">We can further refine this by using the `stringformat` templatetag and appending '00'</p>
+                    <pre class="m-0"><code class="language-django">
+{% verbatim %}&lt;b&gt;{{ pool.business_hours.lower|stringformat:&quot;02d&quot; }}00&lt;/b&gt; to &lt;b&gt;{{ pool.business_hours.upper|stringformat:&quot;02d&quot; }}00&lt;/b&gt;{% endverbatim %}
+                    </code></pre>
+                    <i>Result: <b>0600</b> to <b>1600</b></i>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock content %}

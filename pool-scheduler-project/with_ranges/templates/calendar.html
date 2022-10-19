@@ -1,0 +1,62 @@
+<p></p>
+
+<h3>Calendar View of Reservations</h3>
+<div id="visualization"></div>
+<script>
+    $(function() {
+        var groups = new vis.DataSet(
+            {% autoescape off %}{{ calendar_groups }}{% endautoescape %}
+        );
+
+        // function to make all groups visible again
+        function showAllGroups() {
+            groups.forEach(function(group) {
+                groups.update({
+                    id: group.id,
+                    visible: true
+                });
+            })
+        };
+
+        // create a dataset with items
+        var items = new vis.DataSet(
+            {% autoescape off %}{{ calendar_reservations }}{% endautoescape %}
+        )
+
+        // create visualization
+        var container = document.getElementById('visualization');
+        var options = {
+            // option groupOrder can be a property name or a sort function
+            // the sort function must compare two groups and return a value
+            //     > 0 when a > b
+            //     < 0 when a < b
+            //       0 when a == b
+            groupOrder: function(a, b) {
+                return a.value - b.value;
+            },
+            groupOrderSwap: function(a, b, groups) {
+                var v = a.value;
+                a.value = b.value;
+                b.value = v;
+            },
+            orientation: 'both',
+            editable: false,
+            groupEditable: false,
+            height: "600px",
+            preferZoom: false,
+            verticalScroll:true,
+            zoomKey: "ctrlKey",
+            tooltip: {
+                template: function (originalItemData, parsedItemData) {
+                    return `<b>${originalItemData.start} to ${originalItemData.end}</b>`;
+                }
+            },
+        };
+
+        var timeline = new vis.Timeline(container);
+        timeline.setOptions(options);
+        timeline.setGroups(groups);
+        timeline.setItems(items);
+    });
+
+</script>
