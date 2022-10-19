@@ -7,9 +7,9 @@ This project is a work-in-progress
 
 In order to demonstrate the different approaches to working with range data, it is helpful to have a concrete example to play with. Here we have chosen to build a simple application for managing the swimming pools within a municipality.
 
-![database schema simple]()
+![database schema simple](https://raw.githubusercontent.com/jacklinke/home-on-the-range-with-django/master/presentation/img/erd_light.png)
 
-![database schema detailed]()
+![database schema detailed](https://raw.githubusercontent.com/jacklinke/home-on-the-range-with-django/master/presentation/img/erd.png)
 
 
 ## Pool Scheduling Project Description
@@ -63,7 +63,7 @@ Then visit [127.0.0.1:8002](http://127.0.0.1:8002/admin/) to log in.
 docker compose run django python manage.py mock_data
 ```
 
-![]()
+![Screensht of data mocking](https://raw.githubusercontent.com/jacklinke/home-on-the-range-with-django/master/presentation/img/Screenshot%20from%202022-10-19%2014-34-27.png)
 
 #### Delete all model instances
 
